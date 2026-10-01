@@ -1,0 +1,4 @@
+{"problem":"Compute 1.","ground_truth":"1","source":"arithmetic"}
+{"problem":"Compute 1+1.","ground_truth":"2","source":"arithmetic"}
+{"problem":"Compute 2+2.","ground_truth":"4","source":"arithmetic"}
+

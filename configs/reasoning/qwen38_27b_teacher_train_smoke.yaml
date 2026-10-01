@@ -1,0 +1,43 @@
+experiment:
+  name: qwen38_27b_teacher_train_81k_smoke
+  output_dir: /workspace/results/qwen38_27b_teacher_train_81k_smoke
+dataset:
+  type: jsonl
+  path: /workspace/datasets/PCL-Reasoner-V1.5-RL-Math/split/train.jsonl
+  input_key: problem
+  reference_key: ground_truth
+  source_key: source
+  limit: 2
+task: {type: reasoning}
+executor: {type: model}
+prompt: {type: math_boxed}
+backend:
+  type: openai_compatible
+  model: qwen38-teacher
+  endpoints:
+    - http://127.0.0.1:31000/v1
+    - http://127.0.0.1:31001/v1
+generation:
+  n: 2
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  max_tokens: 81920
+  concurrency: 4
+  timeout_sec: 7200
+  retries: 3
+evaluators:
+  - type: math
+    name: math_v1
+    llm_fallback: {enabled: false}
+metrics:
+  - {type: accuracy}
+  - type: pass_at_k
+    k: [1, 2]
+  - {type: avg_at_k}
+  - {type: length}
+  - {type: correct_length}
+  - {type: truncation}
+  - {type: per_source}
+  - {type: correct_count_distribution}
+

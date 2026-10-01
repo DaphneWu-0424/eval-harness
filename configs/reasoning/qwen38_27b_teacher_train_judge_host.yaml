@@ -1,0 +1,64 @@
+experiment:
+  name: qwen38_27b_teacher_train_81k_judge_pilot
+  output_dir: /ssd/eval-results/qwen38_27b_teacher_train_81k_judge_pilot
+  seed: 20260910
+task:
+  type: reasoning
+dataset:
+  type: jsonl
+  path: /ssd/datasets/PCL-Reasoner-V1.5-RL-Math/split/train.jsonl
+  input_key: problem
+  reference_key: ground_truth
+  source_key: source
+executor:
+  type: model
+prompt:
+  type: math_boxed
+backend:
+  type: openai_compatible
+  model: qwen38-teacher
+  endpoints:
+  - http://127.0.0.1:31000/v1
+  - http://127.0.0.1:31001/v1
+generation:
+  n: 4
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  max_tokens: 81920
+  concurrency: 16
+  timeout_sec: 7200
+  retries: 5
+evaluators:
+- type: math
+  name: math_v1
+  llm_fallback:
+    enabled: true
+    trigger_verdicts:
+    - UNKNOWN
+    - INCORRECT
+    concurrency: 16
+    backend:
+      type: openai_compatible
+      model: deepseek-chat
+      endpoint_env: DEEPSEEK_BASE_URL
+      api_key_env: DEEPSEEK_API_KEY
+    generation:
+      temperature: 0.0
+      max_tokens: 2048
+      timeout_sec: 300
+      retries: 5
+      response_format:
+        type: json_object
+metrics:
+- type: accuracy
+- type: pass_at_k
+  k:
+  - 1
+  - 4
+- type: avg_at_k
+- type: length
+- type: correct_length
+- type: truncation
+- type: per_source
+- type: correct_count_distribution

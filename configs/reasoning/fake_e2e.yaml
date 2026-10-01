@@ -1,0 +1,45 @@
+experiment:
+  name: fake_e2e
+  output_dir: .tmp/fake-e2e
+
+task:
+  type: reasoning
+
+dataset:
+  type: jsonl
+  path: tests/fixtures/fake_math.jsonl
+  input_key: problem
+  reference_key: ground_truth
+  source_key: source
+
+executor:
+  type: model
+
+prompt:
+  type: math_boxed
+
+backend:
+  type: fake
+  responses:
+    - "The answer is \\boxed{1}."
+    - "Final Answer: 2"
+    - "\\boxed{4}"
+
+generation:
+  n: 1
+  concurrency: 2
+  timeout_sec: 10
+  retries: 1
+
+evaluators:
+  - type: math
+
+metrics:
+  - type: accuracy
+  - type: pass_at_k
+    k: [1]
+  - type: avg_at_k
+  - type: length
+  - type: truncation
+  - type: per_source
+

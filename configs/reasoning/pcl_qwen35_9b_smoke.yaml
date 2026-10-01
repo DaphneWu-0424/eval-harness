@@ -1,0 +1,67 @@
+experiment:
+  name: pcl_qwen35_9b_smoke
+  output_dir: /workspace/results/pcl_qwen35_9b_smoke
+  seed: 20260910
+
+task:
+  type: reasoning
+
+dataset:
+  type: jsonl
+  path: /workspace/datasets/PCL-Reasoner-V1.5-RL-Math/split/test.jsonl
+  input_key: problem
+  reference_key: ground_truth
+  source_key: source
+  limit: 3
+
+executor:
+  type: model
+
+prompt:
+  type: math_boxed
+
+backend:
+  type: openai_compatible
+  model: Qwen3.5-9B
+  endpoints:
+    - http://127.0.0.1:31000/v1
+
+generation:
+  n: 1
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  presence_penalty: 1.5
+  max_tokens: 81920
+  concurrency: 3
+  timeout_sec: 7200
+  retries: 3
+
+evaluators:
+  - type: math
+    name: math_v1
+    llm_fallback:
+      enabled: true
+      trigger_verdicts: [UNKNOWN, INCORRECT]
+      concurrency: 3
+      backend:
+        type: openai_compatible
+        model: deepseek-chat
+        endpoint_env: DEEPSEEK_BASE_URL
+        api_key_env: DEEPSEEK_API_KEY
+      generation:
+        temperature: 0.0
+        max_tokens: 2048
+        timeout_sec: 300
+        retries: 5
+        response_format:
+          type: json_object
+
+metrics:
+  - type: accuracy
+  - type: pass_at_k
+    k: [1]
+  - type: avg_at_k
+  - type: length
+  - type: truncation
+  - type: per_source

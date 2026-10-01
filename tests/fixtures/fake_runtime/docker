@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -u
+
+if [[ "$1 $2" == "image inspect" ]]; then
+  if [[ " $* " == *" --format "* ]]; then
+    printf '%s\n' 'sha256:fake-image-id'
+  fi
+  exit 0
+fi
+
+if [[ "$1 $2" == "container inspect" ]]; then
+  [[ -f "$MOCK_CONTAINER_STATE" ]]
+  exit $?
+fi
+
+if [[ "$1" == "run" ]]; then
+  touch "$MOCK_CONTAINER_STATE"
+  exit 0
+fi
+
+if [[ "$1" == "inspect" ]]; then
+  if [[ " $* " == *" State.Running "* ]]; then
+    printf '%s\n' true
+  else
+    printf '%s\n' "$RUN_ID"
+  fi
+  exit 0
+fi
+
+if [[ "$1" == "exec" ]]; then
+  if [[ " $* " == *" python3 -m eval_harness run "* ]]; then
+    if [[ -n "${MOCK_PIPELINE_SLEEP:-}" ]]; then
+      sleep "$MOCK_PIPELINE_SLEEP"
+    fi
+    exit "${MOCK_PIPELINE_STATUS:-0}"
+  fi
+  exit 0
+fi
+
+if [[ "$1 $2" == "rm -f" ]]; then
+  rm -f "$MOCK_CONTAINER_STATE"
+  exit 0
+fi
+
+printf 'unexpected fake docker invocation: %s\n' "$*" >&2
+exit 99
