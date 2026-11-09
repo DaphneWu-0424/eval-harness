@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextvars
 import os
 import sys
 from typing import Any
@@ -8,20 +9,18 @@ from eval_harness.core.interfaces import Environment
 from eval_harness.core.models import StepResult, TaskSample
 from eval_harness.core.registry import ENVIRONMENTS
 
+# Task-local env: each asyncio task (one per sample) holds its own textworld.gym
+# instance, so concurrent samples don't clobber each other's environment.
+_current_env: contextvars.ContextVar = contextvars.ContextVar("alfworld_current_env", default=None)
+
 
 class ALFWorldAdapter(Environment):
     """Thin adapter over the EDGE-vendored ``AlfredTWEnv`` (textworld.gym).
 
-    Runs the environment directly on CPU, bypassing Ray/veRL/torch. Holds a
-    single textworld.gym instance, so it is only safe under ``concurrency=1``
-    (per-sample env isolation is a follow-up).
-
-    Config keys::
-
-        alfworld_package_path: parent dir of the vendored ``alfworld`` package
-        config_path:           path to config_tw.yaml (default under pkg path)
-        eval_dataset:          'eval_in_distribution' | 'eval_out_of_distribution'
-        data_root_env:         env var holding the ALFWorld data root (default ALFWORLD_DATA)
+    Runs the environment directly on CPU, bypassing Ray/veRL/torch. The shared
+    ``AlfredTWEnv`` base is built once in ``__init__``; each ``reset`` creates a
+    per-sample textworld.gym env stored in a task-local ContextVar, so the
+    pipeline can run multiple samples concurrently.
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -34,40 +33,22 @@ class ALFWorldAdapter(Environment):
         data_root_env = config.get("data_root_env", "ALFWORLD_DATA")
         if data_root_env in os.environ:
             os.environ.setdefault("ALFWORLD_DATA", os.environ[data_root_env])
-        self._env = None
-        self._base_env = None
-        self._yaml = None
-        self._AlfredTWEnv = None
-
-    def _import_alfworld(self) -> None:
         if self.pkg_path not in sys.path:
             sys.path.insert(0, self.pkg_path)
         import yaml
         from alfworld.agents.environment.alfred_tw_env import AlfredTWEnv  # noqa: WPS433
 
-        self._yaml = yaml
-        self._AlfredTWEnv = AlfredTWEnv
-
-    def _base(self):
-        if self._base_env is None:
-            self._import_alfworld()
-            with open(self.config_path, encoding="utf-8") as handle:
-                cfg = self._yaml.safe_load(handle)
-            cfg["env"]["type"] = "AlfredTWEnv"
-            cfg["general"]["training_method"] = "dagger"
-            self._base_env = self._AlfredTWEnv(cfg, train_eval=self.eval_dataset)
-        return self._base_env
+        with open(self.config_path, encoding="utf-8") as handle:
+            cfg = yaml.safe_load(handle)
+        cfg["env"]["type"] = "AlfredTWEnv"
+        cfg["general"]["training_method"] = "dagger"
+        self._base_env = AlfredTWEnv(cfg, train_eval=self.eval_dataset)
 
     async def reset(self, sample: TaskSample) -> dict[str, Any]:
         game_file = sample.input if isinstance(sample.input, str) else sample.input["game_file"]
-        if self._env is not None:
-            try:
-                self._env.close()
-            except Exception:
-                pass
-        base = self._base()
-        self._env = base.init_env(batch_size=1, game_files=[game_file], fixed_eval=True)
-        obs, infos = self._env.reset()
+        env = self._base_env.init_env(batch_size=1, game_files=[game_file], fixed_eval=True)
+        _current_env.set(env)
+        obs, infos = env.reset()
         return {
             "observation": self._first(obs),
             "admissible_commands": list(infos["admissible_commands"][0]),
@@ -76,9 +57,10 @@ class ALFWorldAdapter(Environment):
         }
 
     async def step(self, action: Any) -> StepResult:
-        if self._env is None:
+        env = _current_env.get()
+        if env is None:
             raise RuntimeError("ALFWorldAdapter.step called before reset")
-        step_obs, scores, dones, step_infos = self._env.step([str(action)])
+        step_obs, scores, dones, step_infos = env.step([str(action)])
         return StepResult(
             observation=self._first(step_obs),
             reward=self._first(scores),
@@ -91,12 +73,13 @@ class ALFWorldAdapter(Environment):
         )
 
     async def close(self) -> None:
-        if self._env is not None:
+        env = _current_env.get()
+        if env is not None:
             try:
-                self._env.close()
+                env.close()
             except Exception:
                 pass
-            self._env = None
+            _current_env.set(None)
 
     @staticmethod
     def _first(value: Any) -> Any:
