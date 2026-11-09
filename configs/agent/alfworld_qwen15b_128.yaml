@@ -24,7 +24,7 @@ environment:
 
 harness:
   type: alfworld
-  history_length: 5
+  history_length: 2
 
 backend:
   type: openai_compatible

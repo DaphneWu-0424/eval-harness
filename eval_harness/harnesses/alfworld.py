@@ -7,8 +7,21 @@ from eval_harness.core.interfaces import AgentHarness, ModelBackend
 from eval_harness.core.models import TaskSample, Trajectory
 from eval_harness.core.registry import HARNESSES
 
+SYSTEM_PROMPT = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
-PROMPT_TEMPLATE = """You are an expert agent operating in the ALFRED Embodied Environment.
+TEMPLATE_NO_HIS = """You are an expert agent operating in the ALFRED Embodied Environment.
+Your current observation is: {current_observation}
+Your admissible actions of the current situation are: [{admissible_actions}].
+
+Now it's your turn to take an action.
+You should first reason step-by-step about the current situation. This reasoning process MUST be enclosed within <think> </think> tags.
+Once you've finished your reasoning, you should choose an admissible action for current step and present it within <action> </action> tags."""
+
+TEMPLATE = """You are an expert agent operating in the ALFRED Embodied Environment. Your task is to: {task_description}
+
+## Retrieved Relevant Experience
+
+No external general and task-specific experiences are provided. Use your learned strategy and current observation.
 
 ## Current Progress
 
@@ -19,6 +32,15 @@ Your admissible actions of the current situation are: [{admissible_actions}].
 Now it's your turn to take an action.
 You should first reason step-by-step about the current situation. This reasoning process MUST be enclosed within <think> </think> tags.
 Once you've finished your reasoning, you should choose an admissible action for current step and present it within <action> </action> tags."""
+
+
+def format_admissible(admissible: list[str]) -> str:
+    return "'" + "'\n '".join(admissible) + "'"
+
+
+def extract_task(observation: str) -> str:
+    match = re.search(r"Your task is to:\s*(.+)", observation)
+    return match.group(1).strip() if match else ""
 
 
 def parse_action(text: str | None) -> tuple[str, bool]:
@@ -40,12 +62,12 @@ def parse_action(text: str | None) -> tuple[str, bool]:
     if start == -1 or end == -1:
         action = text[-30:].strip()
     else:
-        action = text[start + len("<action>") : end].strip()
+        action = text[start + len("<action>") : end].strip().lower()
     return action, format_valid
 
 
 class ALFWorldHarness(AgentHarness):
-    """Builds the ALFWorld prompt, calls the model, and parses the action."""
+    """Builds the EDGE-aligned ALFWorld prompt, calls the model, and parses the action."""
 
     def __init__(
         self,
@@ -56,7 +78,7 @@ class ALFWorldHarness(AgentHarness):
         self.config = config
         self.model_backend = model_backend
         self.generation_config = dict(generation_config)
-        self.history_length = int(config.get("history_length", 5))
+        self.history_length = int(config.get("history_length", 2))
 
     async def initialize(self, sample: TaskSample) -> None:
         return None
@@ -64,16 +86,28 @@ class ALFWorldHarness(AgentHarness):
     async def next_action(self, trajectory: Trajectory, observation: Any) -> dict[str, Any]:
         obs_text = observation["observation"]
         admissible = observation.get("admissible_commands", [])
+        step_count = sum(1 for e in trajectory.events if e.type == "action")
         history = self._build_history(trajectory)
-        prompt = PROMPT_TEMPLATE.format(
-            step_count=len(history),
-            history_length=min(self.history_length, len(history)),
-            action_history=self._format_history(history),
-            current_step=len(history) + 1,
-            current_observation=obs_text,
-            admissible_actions=", ".join(admissible),
-        )
-        messages = [{"role": "user", "content": prompt}]
+        if step_count == 0:
+            prompt = TEMPLATE_NO_HIS.format(
+                current_observation=obs_text,
+                admissible_actions=format_admissible(admissible),
+            )
+        else:
+            start_index = step_count - len(history) + 1
+            prompt = TEMPLATE.format(
+                task_description=self._task_description(trajectory),
+                step_count=step_count,
+                history_length=len(history),
+                action_history=self._format_history(history, start_index),
+                current_step=step_count + 1,
+                current_observation=obs_text,
+                admissible_actions=format_admissible(admissible),
+            )
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ]
         response = await self.model_backend.generate(messages, self.generation_config)
         content = response.content or ""
         action, format_valid = parse_action(content)
@@ -91,24 +125,29 @@ class ALFWorldHarness(AgentHarness):
     async def finalize(self, trajectory: Trajectory) -> None:
         return None
 
+    def _task_description(self, trajectory: Trajectory) -> str:
+        for event in trajectory.events:
+            if event.type == "observation":
+                return extract_task(str(event.content))
+        return ""
+
     def _build_history(self, trajectory: Trajectory) -> list[tuple[str, str]]:
         pairs: list[tuple[str, str]] = []
-        last_action = None
+        last_obs = None
         for event in trajectory.events:
-            if event.type == "action":
-                last_action = event.content
-            elif event.type == "observation" and last_action is not None:
-                pairs.append((last_action, str(event.content)[:200]))
-                last_action = None
+            if event.type == "observation":
+                last_obs = event.content
+            elif event.type == "action" and last_obs is not None:
+                pairs.append((str(last_obs), event.content))
+                last_obs = None
         return pairs[-self.history_length :]
 
     @staticmethod
-    def _format_history(history: list[tuple[str, str]]) -> str:
-        if not history:
-            return "None"
+    def _format_history(history: list[tuple[str, str]], start_index: int) -> str:
         parts = []
-        for index, (action, obs) in enumerate(history, start=1):
-            parts.append(f"Step {index}: Action: {action} | Observation: {obs}")
+        for offset, (obs, action) in enumerate(history):
+            step_num = start_index + offset
+            parts.append(f"[Observation {step_num}: '{obs}', Action {step_num}: '{action}']")
         return "\n".join(parts)
 
 
