@@ -1,4 +1,5 @@
 from .model import ModelExecutor
+from .agent import AgentExecutor
 
-__all__ = ["ModelExecutor"]
+__all__ = ["AgentExecutor", "ModelExecutor"]
 

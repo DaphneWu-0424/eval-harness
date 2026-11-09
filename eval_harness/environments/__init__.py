@@ -1,4 +1,5 @@
 from .base import NullEnvironment
+from .alfworld import ALFWorldAdapter
 
-__all__ = ["NullEnvironment"]
+__all__ = ["ALFWorldAdapter", "NullEnvironment"]
 

@@ -13,7 +13,15 @@ from typing import Any
 from eval_harness import __version__
 from eval_harness.config import dump_config, execution_fingerprint
 from eval_harness.core.models import EvaluationResult, TaskSample, Trajectory
-from eval_harness.core.registry import BACKENDS, DATASETS, EVALUATORS, EXECUTORS, PROMPTS
+from eval_harness.core.registry import (
+    BACKENDS,
+    DATASETS,
+    ENVIRONMENTS,
+    EVALUATORS,
+    EXECUTORS,
+    HARNESSES,
+    PROMPTS,
+)
 from eval_harness.metrics import compute_metrics
 from eval_harness.persistence import ExperimentStore
 from eval_harness.reports import render_text_report
@@ -21,8 +29,10 @@ from eval_harness.reports import render_text_report
 # Import modules for registry side effects.
 from eval_harness import backends as _backends  # noqa: F401
 from eval_harness import datasets as _datasets  # noqa: F401
+from eval_harness import environments as _environments  # noqa: F401
 from eval_harness import evaluators as _evaluators  # noqa: F401
 from eval_harness import executors as _executors  # noqa: F401
+from eval_harness import harnesses as _harnesses  # noqa: F401
 from eval_harness import prompts as _prompts  # noqa: F401
 
 
@@ -37,14 +47,32 @@ class EvaluationPipeline:
         self.backend = BACKENDS.create(
             config["backend"], generation_config=config.get("generation", {})
         )
-        self.prompt_builder = PROMPTS.create(config.get("prompt", {"type": "math_boxed"}))
-        self.executor = EXECUTORS.create(
-            config["executor"],
-            backend=self.backend,
-            prompt_builder=self.prompt_builder,
-            generation_config=config.get("generation", {}),
-            base_seed=int(config.get("experiment", {}).get("seed", 0)),
-        )
+        if config["executor"].get("type") == "agent":
+            environment = ENVIRONMENTS.create(config["environment"])
+            harness = HARNESSES.create(
+                config["harness"],
+                model_backend=self.backend,
+                generation_config=config.get("generation", {}),
+            )
+            self.executor = EXECUTORS.create(
+                config["executor"],
+                model_backend=self.backend,
+                environment=environment,
+                harness=harness,
+                generation_config=config.get("generation", {}),
+                max_steps=int(config["environment"].get("max_steps", 50)),
+                base_seed=int(config.get("experiment", {}).get("seed", 0)),
+            )
+            self.prompt_builder = None
+        else:
+            self.prompt_builder = PROMPTS.create(config.get("prompt", {"type": "math_boxed"}))
+            self.executor = EXECUTORS.create(
+                config["executor"],
+                backend=self.backend,
+                prompt_builder=self.prompt_builder,
+                generation_config=config.get("generation", {}),
+                base_seed=int(config.get("experiment", {}).get("seed", 0)),
+            )
         evaluator_configs = config.get("evaluators", [])
         if len(evaluator_configs) != 1:
             raise ValueError("first release requires exactly one evaluator")
