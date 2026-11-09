@@ -1,0 +1,57 @@
+experiment:
+  name: aime_2024_qwen25_1.5b_pass1
+  output_dir: /workspace/results/aime_2024_qwen25_1.5b_pass1
+  seed: 20260910
+
+task:
+  type: reasoning
+
+dataset:
+  type: jsonl
+  path: /workspace/datasets/aime-2024/aime-2024.eval-harness-20260918.jsonl
+  id_key: sample_id
+  input_key: problem
+  reference_key: ground_truth
+  source_key: source
+
+executor:
+  type: model
+
+prompt:
+  type: math_boxed
+  suffix: |
+    Please reason step by step, and put your final answer within \boxed{}.
+
+backend:
+  type: openai_compatible
+  model: Qwen2.5-1.5B-Instruct
+  endpoints:
+    - http://127.0.0.1:31000/v1
+
+generation:
+  n: 1
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  presence_penalty: 1.5
+  max_tokens: 8192
+  concurrency: 32
+  timeout_sec: 7200
+  retries: 5
+
+evaluators:
+  - type: math
+    name: aime_exact_match_v1
+    extractor:
+      type: composite_math
+    llm_fallback:
+      enabled: false
+
+metrics:
+  - type: accuracy
+  - type: pass_at_k
+    k: [1]
+  - type: avg_at_k
+  - type: length
+  - type: truncation
+  - type: per_source
