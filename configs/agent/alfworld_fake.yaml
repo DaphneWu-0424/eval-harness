@@ -1,0 +1,44 @@
+experiment:
+  name: alfworld_fake_e2e
+  output_dir: /work/results/alfworld_fake_e2e
+  seed: 0
+
+task:
+  type: agent
+
+dataset:
+  type: jsonl
+  path: /work/alfworld_games.jsonl
+  input_key: game_file
+
+executor:
+  type: agent
+
+environment:
+  type: alfworld
+  alfworld_package_path: /env_package/alfworld
+  config_path: /env_package/alfworld/configs/config_tw.yaml
+  eval_dataset: eval_in_distribution
+  data_root_env: ALFWORLD_DATA
+  max_steps: 5
+
+harness:
+  type: alfworld
+  history_length: 5
+
+backend:
+  type: fake
+  responses:
+    - "<think>I look around to understand my surroundings.</think>\n<action>look</action>"
+
+generation:
+  n: 1
+  concurrency: 1
+  max_tokens: 128
+
+evaluators:
+  - type: agent_success
+    name: agent_success_v1
+
+metrics:
+  - type: accuracy
