@@ -1,6 +1,6 @@
 experiment:
-  name: webshop_qwen15b_smoke
-  output_dir: /work/results/webshop_qwen15b_smoke
+  name: alfworld
+  output_dir: /work/results/alfworld
   seed: 0
 
 task:
@@ -8,20 +8,22 @@ task:
 
 dataset:
   type: jsonl
-  path: /work/webshop_sessions.jsonl
-  input_key: session
+  path: /work/alfworld_games_128.jsonl
+  input_key: game_file
 
 executor:
   type: agent
 
 environment:
-  type: webshop
-  webshop_package_path: /work/webshop
-  num_products: 1000
-  max_steps: 15
+  type: alfworld
+  alfworld_package_path: /env_package/alfworld
+  config_path: /env_package/alfworld/configs/config_tw.yaml
+  eval_dataset: eval_in_distribution
+  data_root_env: ALFWORLD_DATA
+  max_steps: 50
 
 harness:
-  type: webshop
+  type: alfworld
   history_length: 2
 
 backend:
@@ -34,8 +36,8 @@ generation:
   n: 1
   temperature: 0.0
   top_p: 1.0
-  max_tokens: 256
-  concurrency: 1
+  max_tokens: 512
+  concurrency: 16
   timeout_sec: 300
   retries: 3
 

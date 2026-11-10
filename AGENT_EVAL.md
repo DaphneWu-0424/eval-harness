@@ -68,9 +68,7 @@ docker run -d --name alfworld-eval --gpus all \
 
 | 配置 | 说明 |
 |---|---|
-| `configs/agent/alfworld_qwen15b.yaml` | 2 任务 smoke，base 模型 |
-| `configs/agent/alfworld_qwen15b_128.yaml` | 128 任务，base 模型 |
-| `configs/agent/alfworld_qwen15b_128_step100.yaml` | 128 任务，step100 模型 |
+| `configs/agent/alfworld.yaml` | ?? 128 ? valid_seen ???base / checkpoint ???????? |
 
 关键项：`environment.type=alfworld`、`harness.type=alfworld`、`executor.type=agent`、`evaluators=[agent_success]`、`concurrency=16`、`max_steps=50`。
 
@@ -88,7 +86,7 @@ docker exec -d alfworld-eval bash /work/start_sglang.sh
 docker exec -e ALFWORLD_DATA=/alfworld_data \
   -e PYTHONPATH=/eval_harness -w /eval_harness \
   alfworld-eval python -m eval_harness run \
-  --config configs/agent/alfworld_qwen15b_128.yaml
+  --config configs/agent/alfworld.yaml
 ```
 
 ### 1.5 结果（对齐 EDGE）
@@ -150,7 +148,7 @@ docker exec -w /work/webshop/search_engine webshop-eval python -m pyserini.index
 
 | 配置 | 说明 |
 |---|---|
-| `configs/agent/webshop_qwen15b.yaml` | 5 任务 smoke，base 模型 |
+| `configs/agent/webshop.yaml` | 5 任务 smoke，base 模型 |
 
 关键项：`environment.type=webshop`（`webshop_package_path=/work/webshop`、`num_products=1000`）、`harness.type=webshop`、`executor.type=agent`、`evaluators=[agent_success]`、`concurrency=1`、`max_steps=15`。
 
@@ -167,7 +165,7 @@ docker exec -d webshop-eval bash /work/start_sglang.sh   # 内部 --base-gpu-id 
 ```bash
 docker exec -e PYTHONPATH=/eval_harness -w /eval_harness \
   webshop-eval python -m eval_harness run \
-  --config configs/agent/webshop_qwen15b.yaml
+  --config configs/agent/webshop.yaml
 ```
 
 ### 2.7 结果
