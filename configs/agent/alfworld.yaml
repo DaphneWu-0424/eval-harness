@@ -1,6 +1,6 @@
 experiment:
-  name: alfworld_fake_e2e
-  output_dir: /work/results/alfworld_fake_e2e
+  name: alfworld
+  output_dir: /work/results/alfworld
   seed: 0
 
 task:
@@ -8,7 +8,7 @@ task:
 
 dataset:
   type: jsonl
-  path: /work/alfworld_games.jsonl
+  path: /work/alfworld_games_128.jsonl
   input_key: game_file
 
 executor:
@@ -20,21 +20,26 @@ environment:
   config_path: /env_package/alfworld/configs/config_tw.yaml
   eval_dataset: eval_in_distribution
   data_root_env: ALFWORLD_DATA
-  max_steps: 5
+  max_steps: 50
 
 harness:
   type: alfworld
-  history_length: 5
+  history_length: 2
 
 backend:
-  type: fake
-  responses:
-    - "<think>I look around to understand my surroundings.</think>\n<action>look</action>"
+  type: openai_compatible
+  model: Qwen2.5-1.5B-Instruct
+  endpoints:
+    - http://127.0.0.1:31000/v1
 
 generation:
   n: 1
-  concurrency: 1
-  max_tokens: 128
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 512
+  concurrency: 16
+  timeout_sec: 300
+  retries: 3
 
 evaluators:
   - type: agent_success

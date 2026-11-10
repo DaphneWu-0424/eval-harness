@@ -18,6 +18,7 @@ MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-32}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.88}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-4096}"
 HARNESS_SUBCOMMAND="${HARNESS_SUBCOMMAND:-run}"
+REASONING_PARSER="${REASONING_PARSER-qwen3}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 CONTAINER_NAME="eval-harness-${RUN_ID}"
 IMAGE_ID=""
@@ -96,11 +97,15 @@ docker run -d \
   "$IMAGE" -lc 'sleep infinity' >/dev/null
 
 log "starting $SERVER_COUNT SGLang server(s), TP=$TP_SIZE, context=$SERVER_CONTEXT_LENGTH"
+REASONING_PARSER_ARG=""
+if [[ -n "${REASONING_PARSER}" ]]; then
+  REASONING_PARSER_ARG="--reasoning-parser ${REASONING_PARSER}"
+fi
 for ((server_index=0; server_index<SERVER_COUNT; server_index++)); do
   port=$((SERVER_PORT_BASE + server_index))
   base_gpu_id=$((server_index * TP_SIZE))
   docker exec -d "$CONTAINER_NAME" bash -lc \
-    "sglang serve --model-path /workspace/model --served-model-name '$SERVED_MODEL_NAME' --tp-size '$TP_SIZE' --base-gpu-id '$base_gpu_id' --host 127.0.0.1 --port '$port' --dtype bfloat16 --trust-remote-code --reasoning-parser qwen3 --context-length '$SERVER_CONTEXT_LENGTH' --chunked-prefill-size '$CHUNKED_PREFILL_SIZE' --mem-fraction-static '$MEM_FRACTION_STATIC' --max-running-requests '$MAX_RUNNING_REQUESTS' > /workspace/results/sglang-${RUN_ID}-${server_index}.log 2>&1"
+    "sglang serve --model-path /workspace/model --served-model-name '$SERVED_MODEL_NAME' --tp-size '$TP_SIZE' --base-gpu-id '$base_gpu_id' --host 127.0.0.1 --port '$port' --dtype bfloat16 --trust-remote-code ${REASONING_PARSER_ARG} --context-length '$SERVER_CONTEXT_LENGTH' --chunked-prefill-size '$CHUNKED_PREFILL_SIZE' --mem-fraction-static '$MEM_FRACTION_STATIC' --max-running-requests '$MAX_RUNNING_REQUESTS' > /workspace/results/sglang-${RUN_ID}-${server_index}.log 2>&1"
 done
 
 deadline=$((SECONDS + STARTUP_TIMEOUT_SEC))

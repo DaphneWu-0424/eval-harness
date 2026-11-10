@@ -1,0 +1,47 @@
+experiment:
+  name: webshop
+  output_dir: /work/results/webshop
+  seed: 0
+
+task:
+  type: agent
+
+dataset:
+  type: jsonl
+  path: /work/webshop_sessions.jsonl
+  input_key: session
+
+executor:
+  type: agent
+
+environment:
+  type: webshop
+  webshop_package_path: /work/webshop
+  num_products: 1000
+  max_steps: 15
+
+harness:
+  type: webshop
+  history_length: 2
+
+backend:
+  type: openai_compatible
+  model: Qwen2.5-1.5B-Instruct
+  endpoints:
+    - http://127.0.0.1:31000/v1
+
+generation:
+  n: 1
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 256
+  concurrency: 1
+  timeout_sec: 300
+  retries: 3
+
+evaluators:
+  - type: agent_success
+    name: agent_success_v1
+
+metrics:
+  - type: accuracy
