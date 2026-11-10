@@ -29,7 +29,8 @@ CHECKPOINT_DIR="${CHECKPOINT_DIR:?set CHECKPOINT_DIR}"
 CONFIG="${CONFIG:?set CONFIG}"
 BASE_MODEL="${BASE_MODEL:-/ssd/models/Qwen2.5-1.5B-Instruct}"
 MERGE_CONTAINER="${MERGE_CONTAINER:-edge-dev}"
-MERGE_HOST="${MERGE_HOST:-n30283}"
+MERGE_HOST="${MERGE_HOST:-10.36.120.89}"   # n30283 内网 IP（主机名互不解析，需用 IP）
+EVAL_IP="${EVAL_IP:-10.36.120.105}"        # n30285 内网 IP（供合并主机 rsync 回传）
 EVAL_CONTAINER="${EVAL_CONTAINER:-alfworld-sweep}"
 GPU_ID="${GPU_ID:-0}"
 MERGE_DIR="${MERGE_DIR:-/ssd/models/sweep-current}"
@@ -80,7 +81,7 @@ for name in "${ckpts[@]}"; do
 
     # 2.2 把合并产物同步到评测主机（本机）
     log "syncing merged model from $MERGE_HOST to local"
-    ssh "$MERGE_HOST" rsync -a "$MERGE_DIR/" "$(hostname):$MERGE_DIR/"
+    ssh "$MERGE_HOST" rsync -a "$MERGE_DIR/" "$EVAL_IP:$MERGE_DIR/"
 
     # 2.3 起 SGLang（served-model-name=sweep-current）
     log "starting SGLang (GPU $GPU_ID)"
