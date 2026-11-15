@@ -8,3 +8,7 @@ __pycache__/
 !.secrets/*.env.example
 dist/
 build/
+
+# Local dashboards and extracted experiment data
+/*.html
+/seq-*-data/
