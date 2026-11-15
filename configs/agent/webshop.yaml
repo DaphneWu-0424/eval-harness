@@ -8,7 +8,7 @@ task:
 
 dataset:
   type: jsonl
-  path: /work/webshop_sessions.jsonl
+  path: /work/webshop_sessions_500.jsonl
   input_key: session
 
 executor:
