@@ -24,9 +24,20 @@ def render_text_report(name: str, metrics: dict[str, Any]) -> str:
             "correct_length",
             "per_source",
             "correct_trajectories_per_problem",
+            "scienceworld_per_type",
+            "scienceworld_panel",
         }:
             continue
-        lines.append(f"  {key:<32} {_format(value)}")
+        display = ("N/A" if value is None else f"{value:.2f}/100") if key == "scienceworld_score" else _format(value)
+        lines.append(f"  {key:<32} {display}")
+    if "scienceworld_panel" in metrics:
+        lines.append("ScienceWorld Panel")
+        for key, value in metrics["scienceworld_panel"].items():
+            lines.append(f"  {key:<32} {value}")
+        lines.append("ScienceWorld Per Task Type (score /100; success %)")
+        for task, values in metrics["scienceworld_per_type"].items():
+            score = "N/A" if values["score"] is None else f"{values['score']:.2f}"
+            lines.append(f"  {task}: score={score}, success={_format(values['success_rate'])}, resolved={values['resolved']}/{values['planned']}")
     if "length" in metrics:
         lines.append("Length (completion tokens)")
         for key, value in metrics["length"].items():

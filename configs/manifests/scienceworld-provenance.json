@@ -1,0 +1,12 @@
+{
+  "worker_full_source_sha256": "94cd6bfb51adb2e6f1e1c7cb062ad969fb8b636dd42e697b63b44d1afc8fb378",
+  "worker_source": "/ssd/sw-fix-20261113/runs/A-S-r1-8g/code/agent_system/environments/env_package/scienceworld/envs.py",
+  "worker_snapshot_sha256": "ce7d3ace7eec6a1db7a19292509570fdeee1de7c5ab9fd81071d416be2c36058",
+  "manifests": {
+    "scienceworld-claim.json": "44910c71b22077ff0f7f48ab99019fc5a8363ed7acbf6c5bd198f1735ce2a9c4",
+    "scienceworld-in-run.json": "2186da2513d5bb077d1bbe542b6d945bbb169ed488d83a773d7e68bb5c23f3df"
+  },
+  "scienceworld_version": "1.2.3",
+  "java_major": 11,
+  "aggregation": "macro_over_task_types"
+}

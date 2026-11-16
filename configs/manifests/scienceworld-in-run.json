@@ -1,0 +1,1091 @@
+{
+  "schema_version": 1,
+  "task": "scienceworld",
+  "split": "official_test",
+  "episode_step_limit": 50,
+  "suite_size": 149,
+  "aggregation": "macro_over_task_types",
+  "task_type_counts": {
+    "boil": 5,
+    "change-the-state-of-matter-of": 5,
+    "chemistry-mix": 5,
+    "chemistry-mix-paint-secondary-color": 5,
+    "chemistry-mix-paint-tertiary-color": 5,
+    "find-animal": 5,
+    "find-living-thing": 5,
+    "find-non-living-thing": 5,
+    "find-plant": 5,
+    "freeze": 5,
+    "grow-fruit": 5,
+    "grow-plant": 5,
+    "identify-life-stages-1": 5,
+    "identify-life-stages-2": 4,
+    "inclined-plane-determine-angle": 5,
+    "inclined-plane-friction-named-surfaces": 5,
+    "inclined-plane-friction-unnamed-surfaces": 5,
+    "lifespan-longest-lived": 5,
+    "lifespan-longest-lived-then-shortest-lived": 5,
+    "lifespan-shortest-lived": 5,
+    "measure-melting-point-known-substance": 5,
+    "measure-melting-point-unknown-substance": 5,
+    "melt": 5,
+    "mendelian-genetics-known-plant": 5,
+    "mendelian-genetics-unknown-plant": 5,
+    "power-component": 5,
+    "power-component-renewable-vs-nonrenewable-energy": 5,
+    "test-conductivity": 5,
+    "test-conductivity-of-unknown-substances": 5,
+    "use-thermometer": 5
+  },
+  "selection": {
+    "method": "sha256_rank(seed,task,variation), take min(required,available)",
+    "seed": 20261111,
+    "required_per_type": 5
+  },
+  "episodes": [
+    {
+      "episode_id": "scienceworld:boil:23",
+      "env_seed": 23,
+      "task_name": "boil",
+      "task_type": "boil",
+      "variation_id": 23
+    },
+    {
+      "episode_id": "scienceworld:boil:27",
+      "env_seed": 27,
+      "task_name": "boil",
+      "task_type": "boil",
+      "variation_id": 27
+    },
+    {
+      "episode_id": "scienceworld:boil:22",
+      "env_seed": 22,
+      "task_name": "boil",
+      "task_type": "boil",
+      "variation_id": 22
+    },
+    {
+      "episode_id": "scienceworld:boil:25",
+      "env_seed": 25,
+      "task_name": "boil",
+      "task_type": "boil",
+      "variation_id": 25
+    },
+    {
+      "episode_id": "scienceworld:boil:21",
+      "env_seed": 21,
+      "task_name": "boil",
+      "task_type": "boil",
+      "variation_id": 21
+    },
+    {
+      "episode_id": "scienceworld:change-the-state-of-matter-of:29",
+      "env_seed": 29,
+      "task_name": "change-the-state-of-matter-of",
+      "task_type": "change-the-state-of-matter-of",
+      "variation_id": 29
+    },
+    {
+      "episode_id": "scienceworld:change-the-state-of-matter-of:25",
+      "env_seed": 25,
+      "task_name": "change-the-state-of-matter-of",
+      "task_type": "change-the-state-of-matter-of",
+      "variation_id": 25
+    },
+    {
+      "episode_id": "scienceworld:change-the-state-of-matter-of:21",
+      "env_seed": 21,
+      "task_name": "change-the-state-of-matter-of",
+      "task_type": "change-the-state-of-matter-of",
+      "variation_id": 21
+    },
+    {
+      "episode_id": "scienceworld:change-the-state-of-matter-of:23",
+      "env_seed": 23,
+      "task_name": "change-the-state-of-matter-of",
+      "task_type": "change-the-state-of-matter-of",
+      "variation_id": 23
+    },
+    {
+      "episode_id": "scienceworld:change-the-state-of-matter-of:24",
+      "env_seed": 24,
+      "task_name": "change-the-state-of-matter-of",
+      "task_type": "change-the-state-of-matter-of",
+      "variation_id": 24
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix:25",
+      "env_seed": 25,
+      "task_name": "chemistry-mix",
+      "task_type": "chemistry-mix",
+      "variation_id": 25
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix:31",
+      "env_seed": 31,
+      "task_name": "chemistry-mix",
+      "task_type": "chemistry-mix",
+      "variation_id": 31
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix:28",
+      "env_seed": 28,
+      "task_name": "chemistry-mix",
+      "task_type": "chemistry-mix",
+      "variation_id": 28
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix:27",
+      "env_seed": 27,
+      "task_name": "chemistry-mix",
+      "task_type": "chemistry-mix",
+      "variation_id": 27
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix:26",
+      "env_seed": 26,
+      "task_name": "chemistry-mix",
+      "task_type": "chemistry-mix",
+      "variation_id": 26
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-secondary-color:34",
+      "env_seed": 34,
+      "task_name": "chemistry-mix-paint-secondary-color",
+      "task_type": "chemistry-mix-paint-secondary-color",
+      "variation_id": 34
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-secondary-color:27",
+      "env_seed": 27,
+      "task_name": "chemistry-mix-paint-secondary-color",
+      "task_type": "chemistry-mix-paint-secondary-color",
+      "variation_id": 27
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-secondary-color:35",
+      "env_seed": 35,
+      "task_name": "chemistry-mix-paint-secondary-color",
+      "task_type": "chemistry-mix-paint-secondary-color",
+      "variation_id": 35
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-secondary-color:30",
+      "env_seed": 30,
+      "task_name": "chemistry-mix-paint-secondary-color",
+      "task_type": "chemistry-mix-paint-secondary-color",
+      "variation_id": 30
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-secondary-color:31",
+      "env_seed": 31,
+      "task_name": "chemistry-mix-paint-secondary-color",
+      "task_type": "chemistry-mix-paint-secondary-color",
+      "variation_id": 31
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-tertiary-color:31",
+      "env_seed": 31,
+      "task_name": "chemistry-mix-paint-tertiary-color",
+      "task_type": "chemistry-mix-paint-tertiary-color",
+      "variation_id": 31
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-tertiary-color:32",
+      "env_seed": 32,
+      "task_name": "chemistry-mix-paint-tertiary-color",
+      "task_type": "chemistry-mix-paint-tertiary-color",
+      "variation_id": 32
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-tertiary-color:35",
+      "env_seed": 35,
+      "task_name": "chemistry-mix-paint-tertiary-color",
+      "task_type": "chemistry-mix-paint-tertiary-color",
+      "variation_id": 35
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-tertiary-color:28",
+      "env_seed": 28,
+      "task_name": "chemistry-mix-paint-tertiary-color",
+      "task_type": "chemistry-mix-paint-tertiary-color",
+      "variation_id": 28
+    },
+    {
+      "episode_id": "scienceworld:chemistry-mix-paint-tertiary-color:33",
+      "env_seed": 33,
+      "task_name": "chemistry-mix-paint-tertiary-color",
+      "task_type": "chemistry-mix-paint-tertiary-color",
+      "variation_id": 33
+    },
+    {
+      "episode_id": "scienceworld:find-animal:239",
+      "env_seed": 239,
+      "task_name": "find-animal",
+      "task_type": "find-animal",
+      "variation_id": 239
+    },
+    {
+      "episode_id": "scienceworld:find-animal:265",
+      "env_seed": 265,
+      "task_name": "find-animal",
+      "task_type": "find-animal",
+      "variation_id": 265
+    },
+    {
+      "episode_id": "scienceworld:find-animal:233",
+      "env_seed": 233,
+      "task_name": "find-animal",
+      "task_type": "find-animal",
+      "variation_id": 233
+    },
+    {
+      "episode_id": "scienceworld:find-animal:276",
+      "env_seed": 276,
+      "task_name": "find-animal",
+      "task_type": "find-animal",
+      "variation_id": 276
+    },
+    {
+      "episode_id": "scienceworld:find-animal:272",
+      "env_seed": 272,
+      "task_name": "find-animal",
+      "task_type": "find-animal",
+      "variation_id": 272
+    },
+    {
+      "episode_id": "scienceworld:find-living-thing:283",
+      "env_seed": 283,
+      "task_name": "find-living-thing",
+      "task_type": "find-living-thing",
+      "variation_id": 283
+    },
+    {
+      "episode_id": "scienceworld:find-living-thing:265",
+      "env_seed": 265,
+      "task_name": "find-living-thing",
+      "task_type": "find-living-thing",
+      "variation_id": 265
+    },
+    {
+      "episode_id": "scienceworld:find-living-thing:236",
+      "env_seed": 236,
+      "task_name": "find-living-thing",
+      "task_type": "find-living-thing",
+      "variation_id": 236
+    },
+    {
+      "episode_id": "scienceworld:find-living-thing:288",
+      "env_seed": 288,
+      "task_name": "find-living-thing",
+      "task_type": "find-living-thing",
+      "variation_id": 288
+    },
+    {
+      "episode_id": "scienceworld:find-living-thing:245",
+      "env_seed": 245,
+      "task_name": "find-living-thing",
+      "task_type": "find-living-thing",
+      "variation_id": 245
+    },
+    {
+      "episode_id": "scienceworld:find-non-living-thing:233",
+      "env_seed": 233,
+      "task_name": "find-non-living-thing",
+      "task_type": "find-non-living-thing",
+      "variation_id": 233
+    },
+    {
+      "episode_id": "scienceworld:find-non-living-thing:242",
+      "env_seed": 242,
+      "task_name": "find-non-living-thing",
+      "task_type": "find-non-living-thing",
+      "variation_id": 242
+    },
+    {
+      "episode_id": "scienceworld:find-non-living-thing:240",
+      "env_seed": 240,
+      "task_name": "find-non-living-thing",
+      "task_type": "find-non-living-thing",
+      "variation_id": 240
+    },
+    {
+      "episode_id": "scienceworld:find-non-living-thing:248",
+      "env_seed": 248,
+      "task_name": "find-non-living-thing",
+      "task_type": "find-non-living-thing",
+      "variation_id": 248
+    },
+    {
+      "episode_id": "scienceworld:find-non-living-thing:234",
+      "env_seed": 234,
+      "task_name": "find-non-living-thing",
+      "task_type": "find-non-living-thing",
+      "variation_id": 234
+    },
+    {
+      "episode_id": "scienceworld:find-plant:234",
+      "env_seed": 234,
+      "task_name": "find-plant",
+      "task_type": "find-plant",
+      "variation_id": 234
+    },
+    {
+      "episode_id": "scienceworld:find-plant:233",
+      "env_seed": 233,
+      "task_name": "find-plant",
+      "task_type": "find-plant",
+      "variation_id": 233
+    },
+    {
+      "episode_id": "scienceworld:find-plant:289",
+      "env_seed": 289,
+      "task_name": "find-plant",
+      "task_type": "find-plant",
+      "variation_id": 289
+    },
+    {
+      "episode_id": "scienceworld:find-plant:274",
+      "env_seed": 274,
+      "task_name": "find-plant",
+      "task_type": "find-plant",
+      "variation_id": 274
+    },
+    {
+      "episode_id": "scienceworld:find-plant:295",
+      "env_seed": 295,
+      "task_name": "find-plant",
+      "task_type": "find-plant",
+      "variation_id": 295
+    },
+    {
+      "episode_id": "scienceworld:freeze:27",
+      "env_seed": 27,
+      "task_name": "freeze",
+      "task_type": "freeze",
+      "variation_id": 27
+    },
+    {
+      "episode_id": "scienceworld:freeze:25",
+      "env_seed": 25,
+      "task_name": "freeze",
+      "task_type": "freeze",
+      "variation_id": 25
+    },
+    {
+      "episode_id": "scienceworld:freeze:28",
+      "env_seed": 28,
+      "task_name": "freeze",
+      "task_type": "freeze",
+      "variation_id": 28
+    },
+    {
+      "episode_id": "scienceworld:freeze:26",
+      "env_seed": 26,
+      "task_name": "freeze",
+      "task_type": "freeze",
+      "variation_id": 26
+    },
+    {
+      "episode_id": "scienceworld:freeze:21",
+      "env_seed": 21,
+      "task_name": "freeze",
+      "task_type": "freeze",
+      "variation_id": 21
+    },
+    {
+      "episode_id": "scienceworld:grow-fruit:125",
+      "env_seed": 125,
+      "task_name": "grow-fruit",
+      "task_type": "grow-fruit",
+      "variation_id": 125
+    },
+    {
+      "episode_id": "scienceworld:grow-fruit:97",
+      "env_seed": 97,
+      "task_name": "grow-fruit",
+      "task_type": "grow-fruit",
+      "variation_id": 97
+    },
+    {
+      "episode_id": "scienceworld:grow-fruit:104",
+      "env_seed": 104,
+      "task_name": "grow-fruit",
+      "task_type": "grow-fruit",
+      "variation_id": 104
+    },
+    {
+      "episode_id": "scienceworld:grow-fruit:115",
+      "env_seed": 115,
+      "task_name": "grow-fruit",
+      "task_type": "grow-fruit",
+      "variation_id": 115
+    },
+    {
+      "episode_id": "scienceworld:grow-fruit:124",
+      "env_seed": 124,
+      "task_name": "grow-fruit",
+      "task_type": "grow-fruit",
+      "variation_id": 124
+    },
+    {
+      "episode_id": "scienceworld:grow-plant:121",
+      "env_seed": 121,
+      "task_name": "grow-plant",
+      "task_type": "grow-plant",
+      "variation_id": 121
+    },
+    {
+      "episode_id": "scienceworld:grow-plant:109",
+      "env_seed": 109,
+      "task_name": "grow-plant",
+      "task_type": "grow-plant",
+      "variation_id": 109
+    },
+    {
+      "episode_id": "scienceworld:grow-plant:123",
+      "env_seed": 123,
+      "task_name": "grow-plant",
+      "task_type": "grow-plant",
+      "variation_id": 123
+    },
+    {
+      "episode_id": "scienceworld:grow-plant:114",
+      "env_seed": 114,
+      "task_name": "grow-plant",
+      "task_type": "grow-plant",
+      "variation_id": 114
+    },
+    {
+      "episode_id": "scienceworld:grow-plant:97",
+      "env_seed": 97,
+      "task_name": "grow-plant",
+      "task_type": "grow-plant",
+      "variation_id": 97
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-1:11",
+      "env_seed": 11,
+      "task_name": "identify-life-stages-1",
+      "task_type": "identify-life-stages-1",
+      "variation_id": 11
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-1:10",
+      "env_seed": 10,
+      "task_name": "identify-life-stages-1",
+      "task_type": "identify-life-stages-1",
+      "variation_id": 10
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-1:13",
+      "env_seed": 13,
+      "task_name": "identify-life-stages-1",
+      "task_type": "identify-life-stages-1",
+      "variation_id": 13
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-1:9",
+      "env_seed": 9,
+      "task_name": "identify-life-stages-1",
+      "task_type": "identify-life-stages-1",
+      "variation_id": 9
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-1:12",
+      "env_seed": 12,
+      "task_name": "identify-life-stages-1",
+      "task_type": "identify-life-stages-1",
+      "variation_id": 12
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-2:7",
+      "env_seed": 7,
+      "task_name": "identify-life-stages-2",
+      "task_type": "identify-life-stages-2",
+      "variation_id": 7
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-2:6",
+      "env_seed": 6,
+      "task_name": "identify-life-stages-2",
+      "task_type": "identify-life-stages-2",
+      "variation_id": 6
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-2:8",
+      "env_seed": 8,
+      "task_name": "identify-life-stages-2",
+      "task_type": "identify-life-stages-2",
+      "variation_id": 8
+    },
+    {
+      "episode_id": "scienceworld:identify-life-stages-2:9",
+      "env_seed": 9,
+      "task_name": "identify-life-stages-2",
+      "task_type": "identify-life-stages-2",
+      "variation_id": 9
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-determine-angle:136",
+      "env_seed": 136,
+      "task_name": "inclined-plane-determine-angle",
+      "task_type": "inclined-plane-determine-angle",
+      "variation_id": 136
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-determine-angle:137",
+      "env_seed": 137,
+      "task_name": "inclined-plane-determine-angle",
+      "task_type": "inclined-plane-determine-angle",
+      "variation_id": 137
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-determine-angle:159",
+      "env_seed": 159,
+      "task_name": "inclined-plane-determine-angle",
+      "task_type": "inclined-plane-determine-angle",
+      "variation_id": 159
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-determine-angle:163",
+      "env_seed": 163,
+      "task_name": "inclined-plane-determine-angle",
+      "task_type": "inclined-plane-determine-angle",
+      "variation_id": 163
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-determine-angle:154",
+      "env_seed": 154,
+      "task_name": "inclined-plane-determine-angle",
+      "task_type": "inclined-plane-determine-angle",
+      "variation_id": 154
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-named-surfaces:1251",
+      "env_seed": 1251,
+      "task_name": "inclined-plane-friction-named-surfaces",
+      "task_type": "inclined-plane-friction-named-surfaces",
+      "variation_id": 1251
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-named-surfaces:1150",
+      "env_seed": 1150,
+      "task_name": "inclined-plane-friction-named-surfaces",
+      "task_type": "inclined-plane-friction-named-surfaces",
+      "variation_id": 1150
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-named-surfaces:1202",
+      "env_seed": 1202,
+      "task_name": "inclined-plane-friction-named-surfaces",
+      "task_type": "inclined-plane-friction-named-surfaces",
+      "variation_id": 1202
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-named-surfaces:1068",
+      "env_seed": 1068,
+      "task_name": "inclined-plane-friction-named-surfaces",
+      "task_type": "inclined-plane-friction-named-surfaces",
+      "variation_id": 1068
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-named-surfaces:1295",
+      "env_seed": 1295,
+      "task_name": "inclined-plane-friction-named-surfaces",
+      "task_type": "inclined-plane-friction-named-surfaces",
+      "variation_id": 1295
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-unnamed-surfaces:138",
+      "env_seed": 138,
+      "task_name": "inclined-plane-friction-unnamed-surfaces",
+      "task_type": "inclined-plane-friction-unnamed-surfaces",
+      "variation_id": 138
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-unnamed-surfaces:125",
+      "env_seed": 125,
+      "task_name": "inclined-plane-friction-unnamed-surfaces",
+      "task_type": "inclined-plane-friction-unnamed-surfaces",
+      "variation_id": 125
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-unnamed-surfaces:160",
+      "env_seed": 160,
+      "task_name": "inclined-plane-friction-unnamed-surfaces",
+      "task_type": "inclined-plane-friction-unnamed-surfaces",
+      "variation_id": 160
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-unnamed-surfaces:144",
+      "env_seed": 144,
+      "task_name": "inclined-plane-friction-unnamed-surfaces",
+      "task_type": "inclined-plane-friction-unnamed-surfaces",
+      "variation_id": 144
+    },
+    {
+      "episode_id": "scienceworld:inclined-plane-friction-unnamed-surfaces:154",
+      "env_seed": 154,
+      "task_name": "inclined-plane-friction-unnamed-surfaces",
+      "task_type": "inclined-plane-friction-unnamed-surfaces",
+      "variation_id": 154
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived:98",
+      "env_seed": 98,
+      "task_name": "lifespan-longest-lived",
+      "task_type": "lifespan-longest-lived",
+      "variation_id": 98
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived:97",
+      "env_seed": 97,
+      "task_name": "lifespan-longest-lived",
+      "task_type": "lifespan-longest-lived",
+      "variation_id": 97
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived:96",
+      "env_seed": 96,
+      "task_name": "lifespan-longest-lived",
+      "task_type": "lifespan-longest-lived",
+      "variation_id": 96
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived:112",
+      "env_seed": 112,
+      "task_name": "lifespan-longest-lived",
+      "task_type": "lifespan-longest-lived",
+      "variation_id": 112
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived:100",
+      "env_seed": 100,
+      "task_name": "lifespan-longest-lived",
+      "task_type": "lifespan-longest-lived",
+      "variation_id": 100
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived-then-shortest-lived:99",
+      "env_seed": 99,
+      "task_name": "lifespan-longest-lived-then-shortest-lived",
+      "task_type": "lifespan-longest-lived-then-shortest-lived",
+      "variation_id": 99
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived-then-shortest-lived:110",
+      "env_seed": 110,
+      "task_name": "lifespan-longest-lived-then-shortest-lived",
+      "task_type": "lifespan-longest-lived-then-shortest-lived",
+      "variation_id": 110
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived-then-shortest-lived:97",
+      "env_seed": 97,
+      "task_name": "lifespan-longest-lived-then-shortest-lived",
+      "task_type": "lifespan-longest-lived-then-shortest-lived",
+      "variation_id": 97
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived-then-shortest-lived:103",
+      "env_seed": 103,
+      "task_name": "lifespan-longest-lived-then-shortest-lived",
+      "task_type": "lifespan-longest-lived-then-shortest-lived",
+      "variation_id": 103
+    },
+    {
+      "episode_id": "scienceworld:lifespan-longest-lived-then-shortest-lived:102",
+      "env_seed": 102,
+      "task_name": "lifespan-longest-lived-then-shortest-lived",
+      "task_type": "lifespan-longest-lived-then-shortest-lived",
+      "variation_id": 102
+    },
+    {
+      "episode_id": "scienceworld:lifespan-shortest-lived:97",
+      "env_seed": 97,
+      "task_name": "lifespan-shortest-lived",
+      "task_type": "lifespan-shortest-lived",
+      "variation_id": 97
+    },
+    {
+      "episode_id": "scienceworld:lifespan-shortest-lived:121",
+      "env_seed": 121,
+      "task_name": "lifespan-shortest-lived",
+      "task_type": "lifespan-shortest-lived",
+      "variation_id": 121
+    },
+    {
+      "episode_id": "scienceworld:lifespan-shortest-lived:115",
+      "env_seed": 115,
+      "task_name": "lifespan-shortest-lived",
+      "task_type": "lifespan-shortest-lived",
+      "variation_id": 115
+    },
+    {
+      "episode_id": "scienceworld:lifespan-shortest-lived:120",
+      "env_seed": 120,
+      "task_name": "lifespan-shortest-lived",
+      "task_type": "lifespan-shortest-lived",
+      "variation_id": 120
+    },
+    {
+      "episode_id": "scienceworld:lifespan-shortest-lived:110",
+      "env_seed": 110,
+      "task_name": "lifespan-shortest-lived",
+      "task_type": "lifespan-shortest-lived",
+      "variation_id": 110
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-known-substance:357",
+      "env_seed": 357,
+      "task_name": "measure-melting-point-known-substance",
+      "task_type": "measure-melting-point-known-substance",
+      "variation_id": 357
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-known-substance:355",
+      "env_seed": 355,
+      "task_name": "measure-melting-point-known-substance",
+      "task_type": "measure-melting-point-known-substance",
+      "variation_id": 355
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-known-substance:400",
+      "env_seed": 400,
+      "task_name": "measure-melting-point-known-substance",
+      "task_type": "measure-melting-point-known-substance",
+      "variation_id": 400
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-known-substance:334",
+      "env_seed": 334,
+      "task_name": "measure-melting-point-known-substance",
+      "task_type": "measure-melting-point-known-substance",
+      "variation_id": 334
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-known-substance:414",
+      "env_seed": 414,
+      "task_name": "measure-melting-point-known-substance",
+      "task_type": "measure-melting-point-known-substance",
+      "variation_id": 414
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-unknown-substance:275",
+      "env_seed": 275,
+      "task_name": "measure-melting-point-unknown-substance",
+      "task_type": "measure-melting-point-unknown-substance",
+      "variation_id": 275
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-unknown-substance:284",
+      "env_seed": 284,
+      "task_name": "measure-melting-point-unknown-substance",
+      "task_type": "measure-melting-point-unknown-substance",
+      "variation_id": 284
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-unknown-substance:248",
+      "env_seed": 248,
+      "task_name": "measure-melting-point-unknown-substance",
+      "task_type": "measure-melting-point-unknown-substance",
+      "variation_id": 248
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-unknown-substance:298",
+      "env_seed": 298,
+      "task_name": "measure-melting-point-unknown-substance",
+      "task_type": "measure-melting-point-unknown-substance",
+      "variation_id": 298
+    },
+    {
+      "episode_id": "scienceworld:measure-melting-point-unknown-substance:229",
+      "env_seed": 229,
+      "task_name": "measure-melting-point-unknown-substance",
+      "task_type": "measure-melting-point-unknown-substance",
+      "variation_id": 229
+    },
+    {
+      "episode_id": "scienceworld:melt:21",
+      "env_seed": 21,
+      "task_name": "melt",
+      "task_type": "melt",
+      "variation_id": 21
+    },
+    {
+      "episode_id": "scienceworld:melt:22",
+      "env_seed": 22,
+      "task_name": "melt",
+      "task_type": "melt",
+      "variation_id": 22
+    },
+    {
+      "episode_id": "scienceworld:melt:28",
+      "env_seed": 28,
+      "task_name": "melt",
+      "task_type": "melt",
+      "variation_id": 28
+    },
+    {
+      "episode_id": "scienceworld:melt:26",
+      "env_seed": 26,
+      "task_name": "melt",
+      "task_type": "melt",
+      "variation_id": 26
+    },
+    {
+      "episode_id": "scienceworld:melt:23",
+      "env_seed": 23,
+      "task_name": "melt",
+      "task_type": "melt",
+      "variation_id": 23
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-known-plant:103",
+      "env_seed": 103,
+      "task_name": "mendelian-genetics-known-plant",
+      "task_type": "mendelian-genetics-known-plant",
+      "variation_id": 103
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-known-plant:111",
+      "env_seed": 111,
+      "task_name": "mendelian-genetics-known-plant",
+      "task_type": "mendelian-genetics-known-plant",
+      "variation_id": 111
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-known-plant:108",
+      "env_seed": 108,
+      "task_name": "mendelian-genetics-known-plant",
+      "task_type": "mendelian-genetics-known-plant",
+      "variation_id": 108
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-known-plant:115",
+      "env_seed": 115,
+      "task_name": "mendelian-genetics-known-plant",
+      "task_type": "mendelian-genetics-known-plant",
+      "variation_id": 115
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-known-plant:116",
+      "env_seed": 116,
+      "task_name": "mendelian-genetics-known-plant",
+      "task_type": "mendelian-genetics-known-plant",
+      "variation_id": 116
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-unknown-plant:477",
+      "env_seed": 477,
+      "task_name": "mendelian-genetics-unknown-plant",
+      "task_type": "mendelian-genetics-unknown-plant",
+      "variation_id": 477
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-unknown-plant:422",
+      "env_seed": 422,
+      "task_name": "mendelian-genetics-unknown-plant",
+      "task_type": "mendelian-genetics-unknown-plant",
+      "variation_id": 422
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-unknown-plant:384",
+      "env_seed": 384,
+      "task_name": "mendelian-genetics-unknown-plant",
+      "task_type": "mendelian-genetics-unknown-plant",
+      "variation_id": 384
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-unknown-plant:403",
+      "env_seed": 403,
+      "task_name": "mendelian-genetics-unknown-plant",
+      "task_type": "mendelian-genetics-unknown-plant",
+      "variation_id": 403
+    },
+    {
+      "episode_id": "scienceworld:mendelian-genetics-unknown-plant:455",
+      "env_seed": 455,
+      "task_name": "mendelian-genetics-unknown-plant",
+      "task_type": "mendelian-genetics-unknown-plant",
+      "variation_id": 455
+    },
+    {
+      "episode_id": "scienceworld:power-component:15",
+      "env_seed": 15,
+      "task_name": "power-component",
+      "task_type": "power-component",
+      "variation_id": 15
+    },
+    {
+      "episode_id": "scienceworld:power-component:19",
+      "env_seed": 19,
+      "task_name": "power-component",
+      "task_type": "power-component",
+      "variation_id": 19
+    },
+    {
+      "episode_id": "scienceworld:power-component:17",
+      "env_seed": 17,
+      "task_name": "power-component",
+      "task_type": "power-component",
+      "variation_id": 17
+    },
+    {
+      "episode_id": "scienceworld:power-component:16",
+      "env_seed": 16,
+      "task_name": "power-component",
+      "task_type": "power-component",
+      "variation_id": 16
+    },
+    {
+      "episode_id": "scienceworld:power-component:18",
+      "env_seed": 18,
+      "task_name": "power-component",
+      "task_type": "power-component",
+      "variation_id": 18
+    },
+    {
+      "episode_id": "scienceworld:power-component-renewable-vs-nonrenewable-energy:16",
+      "env_seed": 16,
+      "task_name": "power-component-renewable-vs-nonrenewable-energy",
+      "task_type": "power-component-renewable-vs-nonrenewable-energy",
+      "variation_id": 16
+    },
+    {
+      "episode_id": "scienceworld:power-component-renewable-vs-nonrenewable-energy:17",
+      "env_seed": 17,
+      "task_name": "power-component-renewable-vs-nonrenewable-energy",
+      "task_type": "power-component-renewable-vs-nonrenewable-energy",
+      "variation_id": 17
+    },
+    {
+      "episode_id": "scienceworld:power-component-renewable-vs-nonrenewable-energy:18",
+      "env_seed": 18,
+      "task_name": "power-component-renewable-vs-nonrenewable-energy",
+      "task_type": "power-component-renewable-vs-nonrenewable-energy",
+      "variation_id": 18
+    },
+    {
+      "episode_id": "scienceworld:power-component-renewable-vs-nonrenewable-energy:19",
+      "env_seed": 19,
+      "task_name": "power-component-renewable-vs-nonrenewable-energy",
+      "task_type": "power-component-renewable-vs-nonrenewable-energy",
+      "variation_id": 19
+    },
+    {
+      "episode_id": "scienceworld:power-component-renewable-vs-nonrenewable-energy:15",
+      "env_seed": 15,
+      "task_name": "power-component-renewable-vs-nonrenewable-energy",
+      "task_type": "power-component-renewable-vs-nonrenewable-energy",
+      "variation_id": 15
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity:810",
+      "env_seed": 810,
+      "task_name": "test-conductivity",
+      "task_type": "test-conductivity",
+      "variation_id": 810
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity:798",
+      "env_seed": 798,
+      "task_name": "test-conductivity",
+      "task_type": "test-conductivity",
+      "variation_id": 798
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity:725",
+      "env_seed": 725,
+      "task_name": "test-conductivity",
+      "task_type": "test-conductivity",
+      "variation_id": 725
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity:895",
+      "env_seed": 895,
+      "task_name": "test-conductivity",
+      "task_type": "test-conductivity",
+      "variation_id": 895
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity:774",
+      "env_seed": 774,
+      "task_name": "test-conductivity",
+      "task_type": "test-conductivity",
+      "variation_id": 774
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity-of-unknown-substances:506",
+      "env_seed": 506,
+      "task_name": "test-conductivity-of-unknown-substances",
+      "task_type": "test-conductivity-of-unknown-substances",
+      "variation_id": 506
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity-of-unknown-substances:571",
+      "env_seed": 571,
+      "task_name": "test-conductivity-of-unknown-substances",
+      "task_type": "test-conductivity-of-unknown-substances",
+      "variation_id": 571
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity-of-unknown-substances:578",
+      "env_seed": 578,
+      "task_name": "test-conductivity-of-unknown-substances",
+      "task_type": "test-conductivity-of-unknown-substances",
+      "variation_id": 578
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity-of-unknown-substances:576",
+      "env_seed": 576,
+      "task_name": "test-conductivity-of-unknown-substances",
+      "task_type": "test-conductivity-of-unknown-substances",
+      "variation_id": 576
+    },
+    {
+      "episode_id": "scienceworld:test-conductivity-of-unknown-substances:528",
+      "env_seed": 528,
+      "task_name": "test-conductivity-of-unknown-substances",
+      "task_type": "test-conductivity-of-unknown-substances",
+      "variation_id": 528
+    },
+    {
+      "episode_id": "scienceworld:use-thermometer:482",
+      "env_seed": 482,
+      "task_name": "use-thermometer",
+      "task_type": "use-thermometer",
+      "variation_id": 482
+    },
+    {
+      "episode_id": "scienceworld:use-thermometer:522",
+      "env_seed": 522,
+      "task_name": "use-thermometer",
+      "task_type": "use-thermometer",
+      "variation_id": 522
+    },
+    {
+      "episode_id": "scienceworld:use-thermometer:442",
+      "env_seed": 442,
+      "task_name": "use-thermometer",
+      "task_type": "use-thermometer",
+      "variation_id": 442
+    },
+    {
+      "episode_id": "scienceworld:use-thermometer:429",
+      "env_seed": 429,
+      "task_name": "use-thermometer",
+      "task_type": "use-thermometer",
+      "variation_id": 429
+    },
+    {
+      "episode_id": "scienceworld:use-thermometer:407",
+      "env_seed": 407,
+      "task_name": "use-thermometer",
+      "task_type": "use-thermometer",
+      "variation_id": 407
+    }
+  ],
+  "seed_semantics": "ScienceWorld PythonInterface.load/reset seeds Scala RNG from variationIdx; env_seed equals variation_id"
+}

@@ -159,6 +159,19 @@ class SeparatedRuntimeTests(unittest.TestCase):
         self.assertTrue(any("dst=/alfworld_data" in v for v in run))
         self.assertFalse(any("dst=/webshop_data" in v for v in run))
 
+    def test_scienceworld_needs_no_edge_or_external_dataset_mounts(self):
+        self.args.benchmarks = ["scienceworld"]
+        self.args.backend = "fake"
+        self.args.env_package_dir = str(Path(self.temp.name) / "missing-edge")
+        self.args.work_dir = str(Path(self.temp.name) / "missing-work")
+        self.args.datasets_dir = str(Path(self.temp.name) / "missing-datasets")
+        with patch("eval_harness.runtime.separated.subprocess.run", side_effect=self.process):
+            self.suite.run()
+        command = next(c for c in self.calls if c[:2] == ["docker", "run"])
+        self.assertNotIn("--gpus", command)
+        for target in ["dst=/env_package", "dst=/work", "dst=/workspace/model"]:
+            self.assertFalse(any(target in token for token in command))
+
 
 if __name__ == "__main__":
     unittest.main()

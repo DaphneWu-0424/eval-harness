@@ -17,7 +17,8 @@ from typing import Any
 import yaml
 
 SGLANG_IMAGE = "lmsysorg/sglang:0.5.19-qwen38-runtime"
-ENV_IMAGES = {"alfworld": "eval-harness/alfworld-env:20261116", "webshop": "eval-harness/webshop-env:20261116"}
+ENV_IMAGES = {"alfworld": "eval-harness/alfworld-env:20261116", "webshop": "eval-harness/webshop-env:20261116",
+              "scienceworld": "eval-harness/scienceworld-env:20261116"}
 LABEL = "eval-harness.run_id"
 
 
@@ -61,7 +62,7 @@ def resolved_config(base: dict, benchmark: str, args: argparse.Namespace, endpoi
     if args.max_steps is not None:
         config["environment"]["max_steps"] = args.max_steps
     if args.backend == "fake":
-        action = "look" if config["environment"]["type"] == "alfworld" else "search[shirt]"
+        action = "search[shirt]" if config["environment"]["type"] == "webshop" else "look"
         config["backend"] = {"type": "fake", "responses": [f"<think>Inspect the environment.</think><action>{action}</action>"]}
     else:
         config["backend"] = {"type": "openai_compatible", "model": args.model_name, "endpoints": [endpoint]}
@@ -120,7 +121,7 @@ class AgentSuite:
             raise ValueError("mem-fraction-static must be between 0 and 1")
         project = Path(args.project_dir).resolve()
         work = Path(args.work_dir).resolve()
-        for path in (project / "eval_harness", work, Path(args.env_package_dir)):
+        for path in (project / "eval_harness",):
             if not path.is_dir():
                 raise ValueError(f"required directory not found: {path}")
         configs, images = {}, {}
@@ -132,10 +133,18 @@ class AgentSuite:
             if env_type not in ENV_IMAGES:
                 raise ValueError(f"unsupported environment in {path}: {env_type}")
             dataset = config["dataset"]["path"]
-            if not dataset.startswith("/work/") or not (work / dataset.removeprefix("/work/")).is_file():
-                raise ValueError(f"dataset is not available through /work: {dataset}")
-            if not (Path(args.datasets_dir) / env_type).is_dir():
-                raise ValueError(f"missing {env_type} dataset directory")
+            if dataset.startswith("/work/"):
+                dataset_path = work / dataset.removeprefix("/work/")
+            elif dataset.startswith("/eval_harness/"):
+                dataset_path = project / dataset.removeprefix("/eval_harness/")
+            else:
+                raise ValueError(f"dataset is not available through a declared mount: {dataset}")
+            if not dataset_path.is_file():
+                raise ValueError(f"dataset is missing: {dataset_path}")
+            if env_type != "scienceworld":
+                for directory in [work, Path(args.env_package_dir), Path(args.datasets_dir) / env_type]:
+                    if not directory.is_dir():
+                        raise ValueError(f"missing environment resource directory: {directory}")
             if env_type == "webshop":
                 if not (work / "webshop/search_engine/indexes_1k").is_dir():
                     raise ValueError("WebShop Lucene indexes_1k is missing")
@@ -213,13 +222,16 @@ class AgentSuite:
         command = ["run", "-d", "--init", "--name", name, *self.labels(benchmark), "--network", self.network,
                    "--env", "PYTHONPATH=/eval_harness", "--env", "PYTHONDONTWRITEBYTECODE=1",
                    "--env", "NVIDIA_VISIBLE_DEVICES=void", "--env", "CUDA_VISIBLE_DEVICES=",
-                   *self.mount(args.project_dir, "/eval_harness"), *self.mount(args.env_package_dir, "/env_package"),
-                   *self.mount(args.work_dir, "/work"), *self.mount(self.root, "/results", readonly=False),
+                   *self.mount(args.project_dir, "/eval_harness"), *self.mount(self.root, "/results", readonly=False),
                    "--workdir", "/eval_harness"]
+        if env_type != "scienceworld":
+            command += [*self.mount(args.env_package_dir, "/env_package"), *self.mount(args.work_dir, "/work")]
         if env_type == "alfworld":
             command += [*self.mount(Path(args.datasets_dir) / "alfworld", "/alfworld_data"), "--env", "ALFWORLD_DATA=/alfworld_data"]
-        else:
+        elif env_type == "webshop":
             command += self.mount(Path(args.datasets_dir) / "webshop", "/webshop_data")
+        else:
+            command += ["--env", "JAVA_TOOL_OPTIONS=-Djava.io.tmpdir=/tmp -Duser.home=/tmp"]
         command += ["--entrypoint", "python3", self.artifacts["environment_images"][benchmark]["id"],
                     "-m", "eval_harness", "run", "--config", f"/results/configs/{benchmark}.yaml"]
         self.containers.append(name)
@@ -230,7 +242,7 @@ class AgentSuite:
         if code:
             raise RuntimeError(f"{benchmark} evaluation exited with status {code}")
         metrics = json.loads((self.root / benchmark / "summary.json").read_text(encoding="utf-8"))
-        if metrics["counts"]["generation_failed_or_missing"]:
+        if metrics["counts"]["generation_failed_or_missing"] or metrics["counts"].get("judge_unknown", 0):
             raise RuntimeError(f"{benchmark} has failed or missing episodes; inspect its trajectory and logs")
         self.artifacts["benchmarks"][benchmark] = {"status": "completed", "summary": f"{benchmark}/summary.json", "metrics": metrics}
 

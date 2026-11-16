@@ -1,0 +1,36 @@
+experiment:
+  name: scienceworld
+  output_dir: /work/results/scienceworld
+  seed: 0
+task:
+  type: agent
+dataset:
+  type: scienceworld_manifest
+  path: /eval_harness/configs/manifests/scienceworld-claim.json
+executor:
+  type: agent
+environment:
+  type: scienceworld
+  max_steps: 50
+harness:
+  type: scienceworld
+  history_length: 4
+  max_prompt_tokens: 4096
+backend:
+  type: openai_compatible
+  model: current-checkpoint
+  endpoints:
+    - http://127.0.0.1:31000/v1
+generation:
+  n: 1
+  temperature: 0.0
+  top_p: 1.0
+  repetition_penalty: 1.0
+  max_tokens: 512
+  concurrency: 4
+  timeout_sec: 300
+  retries: 3
+evaluators:
+  - type: scienceworld
+metrics:
+  - type: scienceworld

@@ -47,10 +47,13 @@ class AgentExecutor(Executor):
         episode_length = 0
         invalid_count = 0
         error: str | None = None
+        episode_return = 0.0
+        obs_ctx: dict[str, Any] = {}
         try:
             obs_ctx = await self.environment.reset(sample)
             events.append(
-                TrajectoryEvent(type="observation", role="environment", content=obs_ctx["observation"])
+                TrajectoryEvent(type="observation", role="environment", content=obs_ctx["observation"],
+                                metadata=obs_ctx.get("trajectory_metadata", {}))
             )
             await self.harness.initialize(sample)
             for step in range(self.max_steps):
@@ -75,10 +78,17 @@ class AgentExecutor(Executor):
                 if not result["is_action_valid"]:
                     invalid_count += 1
                 step_result = await self.environment.step(result["action"])
+                if step_result.reward is not None:
+                    episode_return += float(step_result.reward)
                 events.append(
-                    TrajectoryEvent(type="observation", role="environment", content=step_result.observation)
+                    TrajectoryEvent(type="observation", role="environment", content=step_result.observation,
+                                    metadata={**step_result.metadata.get("trajectory_metadata", {}),
+                                              "reward": float(step_result.reward) if step_result.reward is not None else None,
+                                              "done": bool(step_result.done)})
                 )
                 obs_ctx = {
+                    **obs_ctx,
+                    **step_result.metadata,
                     "observation": step_result.observation,
                     "admissible_commands": step_result.metadata.get("admissible_commands", []),
                     "won": step_result.metadata.get("won", False),
@@ -104,13 +114,16 @@ class AgentExecutor(Executor):
         finally:
             try:
                 await self.environment.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                trajectory.status = "failed"
+                error = f"EnvironmentCloseError: {type(exc).__name__}: {exc}"
 
         trajectory.error = error
         trajectory.timing = {"started_at": started, "ended_at": time.time()}
         trajectory.metadata = {
+            **obs_ctx.get("trajectory_metadata", {}),
             "won": won,
+            "episode_return": episode_return,
             "episode_length": episode_length,
             "invalid_action_count": invalid_count,
             "error_type": None if trajectory.status == "completed" else (error or "").split(":")[0],

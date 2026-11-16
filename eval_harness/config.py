@@ -46,6 +46,8 @@ def execution_fingerprint(config: dict[str, Any]) -> str:
     """Hash only inputs that can change raw model trajectories."""
     sections = ("task", "dataset", "executor", "prompt", "backend", "generation")
     value = {section: config.get(section) for section in sections}
+    if config.get("executor", {}).get("type") == "agent":
+        value.update(environment=config.get("environment"), harness=config.get("harness"))
     encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 

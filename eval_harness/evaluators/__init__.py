@@ -1,6 +1,7 @@
 from .math import MathEvaluator, compare_math_answers
 from .llm_judge import LLMJudge, parse_judge_output
 from .agent_success import AgentSuccessEvaluator
+from .scienceworld import ScienceWorldEvaluator
 
 __all__ = [
     "AgentSuccessEvaluator",

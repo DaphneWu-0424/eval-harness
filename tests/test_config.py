@@ -24,6 +24,13 @@ class ConfigFingerprintTests(unittest.TestCase):
         changed = {"generation": {"n": 2}}
         self.assertNotEqual(execution_fingerprint(config), execution_fingerprint(changed))
 
+    def test_agent_environment_and_harness_change_execution_fingerprint(self):
+        config = {"executor": {"type": "agent"}, "environment": {"max_steps": 50}, "harness": {"history_length": 4}}
+        for section, key, value in [("environment", "max_steps", 3), ("harness", "history_length", 2)]:
+            changed = copy.deepcopy(config)
+            changed[section][key] = value
+            self.assertNotEqual(execution_fingerprint(config), execution_fingerprint(changed))
+
     def test_formal_and_smoke_configs_load(self):
         for path in (
             "configs/reasoning/pcl_qwen35_9b_base.yaml",
