@@ -1,0 +1,15 @@
+{
+  "image": "ghcr.io/stonybrooknlp/appworld:latest",
+  "image_id": "sha256:f27cd05dfdef2afd696d05591ea4837ad6c8320b343874bfbe7b24eea5aedbf1",
+  "manifest_digest": "sha256:77d37be71741a740d782c909633845be4a363c5aad8d61530a57f9a1da3c4398",
+  "appworld_version": "0.1.3",
+  "prompt_source": "/ssd/slime-ckpt/EDGE/agent_system/environments/prompts/appworld.py",
+  "prompt_sha256": "3a515e963c10a94242b1e0394faa22e5e26913be5f77cd8bd04421fd58bbacd5",
+  "manifests": {
+    "appworld-test-challenge.json": "5f7a4c2efa782e5187d870600e35e9c4ed6890cd0d680fd592638a5c463b972e",
+    "appworld-test-normal.json": "ff13c75b0efa04bb6f035f3cef7ded142de53151f618b2b05476afb81f82fe0f"
+  },
+  "projection_source": "/ssd/slime-ckpt/EDGE/agent_system/environments/env_package/appworld/projection.py",
+  "projection_sha256": "17fe06d0cc6095d404bd91bcb8edc664533fb02749139c48f79ce4415fffe7c5",
+  "worker_reference_sha256": "f4f398a59b44c6a01921086032b85082f2075604b39a392603fa15b05e73ce15"
+}

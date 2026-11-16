@@ -8,6 +8,7 @@
 | ALFWorld | `eval-harness/alfworld-env:20261116` | 无 | 环境、轨迹、判分 |
 | WebShop | `eval-harness/webshop-env:20261116` | 无 | 环境、Lucene 检索、轨迹、判分 |
 | ScienceWorld | `eval-harness/scienceworld-env:20261116` | 无 | SDK、Java 模拟器、轨迹、判分 |
+| AppWorld | `ghcr.io/stonybrooknlp/appworld:latest` | 无 | SDK、Python REPL、应用数据库、官方测试判分 |
 
 每个队列任务有独立推理容器、环境容器和 Docker 网络。环境通过 HTTP 请求推理服务，不挂载模型权重。ScienceWorld 只挂载项目和结果目录，不依赖原 EDGE。运行后保存日志、容器检查记录和解析后的配置，再清理属于该任务的容器与网络。
 
@@ -15,7 +16,7 @@ ScienceWorld 环境镜像复用同事的 `seq-grpo-3b:20261111`，保留 Science
 
 ## 镜像与数据准备
 
-以下命令在集群宿主机执行。n30285 已准备三个环境镜像；同步代码不会自动同步镜像或外部数据。
+以下命令在集群宿主机执行。n30285 已准备四个环境镜像；同步代码不会自动同步镜像或外部数据。
 
 ```bash
 cd /ssd/eval-harness
@@ -76,7 +77,7 @@ python3 scripts/run_checkpoint_sweep.py --parallel \
 
 HF checkpoint 直接使用；FSDP checkpoint 通过已有 `edge-dev` 容器串行导出，每个 checkpoint 只导出一次。可用 `--base-model`、`--merge-container`、`--merge-root` 调整。串行入口为 `scripts/run_checkpoint_sweep.sh`。
 
-未指定数据集时默认选择三个环境。`--dataset NAME=CONFIG.yaml` 可为自定义配置指定唯一名称；配置路径相对于项目根目录（也支持绝对路径），清单必须位于声明的容器挂载内。`--steps` 可筛选 checkpoint step。
+未指定数据集时默认选择四个环境。`--dataset NAME=CONFIG.yaml` 可为自定义配置指定唯一名称；配置路径相对于项目根目录（也支持绝对路径），清单必须位于声明的容器挂载内。`--steps` 可筛选 checkpoint step。
 
 ## ScienceWorld 协议与分数
 
@@ -109,9 +110,45 @@ prompt 为单条 user 消息，要求 `<think>...</think><action>...</action>`�
 
 原同事推理使用 vLLM，本项目使用 SGLang；环境与提示词对齐不代表不同后端生成结果逐 token 相同。
 
+## AppWorld 协议
+
+默认配置为 `configs/agent/appworld.yaml`，使用官方镜像，无需启动已有训练容器或端口池。SDK 位于镜像的 `/opt/venv/bin/python`，runner 显式使用这个解释器。
+
+```bash
+CHECKPOINT=/path/to/ckpt bash scripts/run_checkpoint_sweep_parallel.sh --benchmark appworld
+```
+
+默认数据集为 `test_normal`（168 tasks / 56 scenarios），可选 `test_challenge`（417 tasks / 139 scenarios）。固定 ID 清单和镜像/提示词哈希位于 `configs/manifests/appworld-*.json`。可复制默认配置并替换清单路径，通过 `--dataset aw-challenge=配置路径` 选择 challenge。
+
+环境数据从宿主机 `/ssd/datasets/appworld/data` 只读挂载到 `/run/data`；SDK 输出数据库、交互日志和测试结果写入任务结果目录的 `<数据集名>-native/`。环境容器只挂载项目、数据和本任务结果，不挂载 GPU、权重或 Docker socket。运行时将镜像标签解析为实际 image ID，并保存到 `suite.json`。
+
+当前验证版本为 AppWorld 0.1.3，image ID `sha256:f27cd05dfdef2afd696d05591ea4837ad6c8320b343874bfbe7b24eea5aedbf1`。`latest` 是可变标签；在另一台机器准备镜像后，先执行下方 SDK 检查，再运行正式测评。
+
+```bash
+docker run --rm --init --network none \
+  -v /ssd/eval-harness:/eval_harness:ro \
+  -v /ssd/datasets/appworld/data:/run/data:ro \
+  -v /ssd/eval-results:/validation \
+  --entrypoint /opt/venv/bin/python ghcr.io/stonybrooknlp/appworld:latest \
+  /eval_harness/scripts/check_appworld_environment.py \
+  --gold-train --output /validation/appworld-sdk-check.json
+```
+
+每任务默认 50 次代码执行、每次执行超时 60 秒，greedy 生成最多 2048 tokens，repetition penalty 1.0，episode 并发为 1。每个 episode 在独立子进程的主线程运行 SDK，隔离 AppWorld 的全局数据库、时间冻结、执行计时器和安全补丁；模型请求在父进程中运行。
+
+提示词按现有 EDGE AppWorld 训练模板冻结，使用最近 4 次 code/result，历史文本按原实现截取最后 10000 字符。模型输出 `<think>...</think><code>...</code>`；提取 code 时保留 Python 大小写，格式错误按原 projection 使用末尾 100 字符并记录 invalid。此协议是现有训练协议，不声称复现官方 leaderboard agent 的完整配置。
+
+`apis.supervisor.complete_task()` 只表示模型声明结束，不直接算成功。在声明结束或达到步数上限时执行官方 `world.evaluate()`；只有全部状态测试通过才成功。SDK/模型异常、测试缺失不会当作普通零分。对用户可见的观察不包含判分测试或参考答案。
+
+- `appworld_tgc` / `accuracy`：Task Goal Completion，按 task 平均的成功率。
+- `appworld_sgc`：Scenario Goal Completion，只有同一 scenario 的全部变体都成功才记 1；缺少变体或有未解决 episode 时留空。
+- `appworld_full_panel`：是否覆盖完整任务清单。部分冒烟结果不代表完整测试集。
+
+官方 API 说明见 [AppWorld README](https://github.com/StonyBrookNLP/appworld)，镜像见 [官方 GHCR 页面](https://github.com/StonyBrookNLP/appworld/pkgs/container/appworld)。
+
 ## 结果与验证
 
-默认结果目录为 `/ssd/eval-results/separated/`。每次提交使用唯一 run-id，不覆盖已有结果。队列 `<run-id>-sweep/` 包含 `sweep.json`、`matrix.csv` 和每项任务日志；子任务目录包含 `suite.json`、配置、轨迹、判分、指标和报告。矩阵将成功率与 ScienceWorld 的 0–100 任务得分分列保存。
+默认结果目录为 `/ssd/eval-results/separated/`。每次提交使用唯一 run-id，不覆盖已有结果。队列 `<run-id>-sweep/` 包含 `sweep.json`、`matrix.csv` 和每项任务日志；子任务目录包含 `suite.json`、配置、轨迹、判分、指标和报告。矩阵将成功率、ScienceWorld 的 0–100 得分及 AppWorld 的场景成功率分列保存。
 
 2026-11-16 在 n30285 已验证：
 
@@ -122,3 +159,5 @@ prompt 为单条 user 消息，要求 `<think>...</think><action>...</action>`�
 - ScienceWorld 镜像内完整 Linux 单元测试 77 项通过。测试启动时清空镜像继承的 `BASH_ENV` / `ENV`，避免镜像的 shell 初始化递归调用 mock `nvidia-smi`；正式环境入口直接运行 Python。
 
 原生验证工具为 `scripts/check_scienceworld_environment.py`。尚未运行完整 271 个 episode 的模型测评。
+
+AppWorld 同日验证：官方镜像内 Linux 单元测试 84 项通过；CPU fake 测试 2 个任务各 2 步、真实 SGLang 单 GPU 队列测试 1 个任务 2 步均完成。训练集一个原生 gold 路径通过全部 2 项测试，未执行时判定失败。尚未运行完整 168 或 417 个任务的模型测评。

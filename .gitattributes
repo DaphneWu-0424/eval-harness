@@ -1,0 +1,2 @@
+# Frozen training prompt snapshot: preserve whitespace inside the prompt strings.
+eval_harness/harnesses/appworld_prompts.py whitespace=-blank-at-eol

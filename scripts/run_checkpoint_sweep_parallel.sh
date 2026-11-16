@@ -21,7 +21,8 @@ case "${CONFIG:-}" in
   *alfworld*) args+=(--benchmark alfworld) ;;
   *webshop*) args+=(--benchmark webshop) ;;
   *scienceworld*) args+=(--benchmark scienceworld) ;;
+  *appworld*) args+=(--benchmark appworld) ;;
   "") ;;
-  *) echo "Unsupported CONFIG; use --benchmark alfworld, webshop or scienceworld" >&2; exit 2 ;;
+  *) echo "Unsupported CONFIG; use --benchmark alfworld, webshop, scienceworld or appworld" >&2; exit 2 ;;
 esac
 exec python3 "$(dirname "$0")/run_checkpoint_sweep.py" "${args[@]}" "$@"

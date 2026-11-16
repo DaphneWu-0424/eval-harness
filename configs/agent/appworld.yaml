@@ -1,0 +1,37 @@
+experiment:
+  name: appworld
+  output_dir: /results/appworld
+  seed: 0
+task:
+  type: agent
+dataset:
+  type: appworld_manifest
+  path: /eval_harness/configs/manifests/appworld-test-normal.json
+executor:
+  type: agent
+environment:
+  type: appworld
+  max_steps: 50
+  timeout_seconds: 60
+  seed: 0
+harness:
+  type: appworld
+  history_length: 4
+backend:
+  type: openai_compatible
+  model: current-checkpoint
+  endpoints:
+    - http://127.0.0.1:31000/v1
+generation:
+  n: 1
+  temperature: 0.0
+  top_p: 1.0
+  repetition_penalty: 1.0
+  max_tokens: 2048
+  concurrency: 1
+  timeout_sec: 300
+  retries: 3
+evaluators:
+  - type: appworld
+metrics:
+  - type: appworld

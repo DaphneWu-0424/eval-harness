@@ -106,12 +106,13 @@ class TaskQueue:
         temporary = self.report_dir / "matrix.csv.tmp"
         with temporary.open("w", newline="", encoding="utf-8") as output:
             writer = csv.writer(output)
-            writer.writerow(["checkpoint", "checkpoint_path", "global_step", "benchmark", "gpu", "success_rate", "task_score", "aggregation", "status", "run_id"])
+            writer.writerow(["checkpoint", "checkpoint_path", "global_step", "benchmark", "gpu", "success_rate", "task_score", "aggregation", "status", "run_id", "scenario_success_rate"])
             for task in self.tasks:
                 writer.writerow([task["checkpoint"], task["checkpoint_path"], task["step"] if task["step"] is not None else "",
                                  task["benchmark"], task.get("gpu", ""), task.get("metrics", {}).get("accuracy", ""),
                                  task.get("metrics", {}).get("scienceworld_score", ""),
-                                 task.get("metrics", {}).get("scienceworld_score_aggregation", "mean_over_episodes"), task["status"], task["run_id"]])
+                                 task.get("metrics", {}).get("scienceworld_score_aggregation", "mean_over_episodes"), task["status"], task["run_id"],
+                                 task.get('metrics', {}).get('appworld_sgc', '')])
         temporary.replace(self.report_dir / "matrix.csv")
 
     def request_stop(self, signum=None):

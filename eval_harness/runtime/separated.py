@@ -18,7 +18,8 @@ import yaml
 
 SGLANG_IMAGE = "lmsysorg/sglang:0.5.19-qwen38-runtime"
 ENV_IMAGES = {"alfworld": "eval-harness/alfworld-env:20261116", "webshop": "eval-harness/webshop-env:20261116",
-              "scienceworld": "eval-harness/scienceworld-env:20261116"}
+              "scienceworld": "eval-harness/scienceworld-env:20261116",
+              "appworld": "ghcr.io/stonybrooknlp/appworld:latest"}
 LABEL = "eval-harness.run_id"
 
 
@@ -64,6 +65,8 @@ def resolved_config(base: dict, benchmark: str, args: argparse.Namespace, endpoi
     if args.backend == "fake":
         action = "search[shirt]" if config["environment"]["type"] == "webshop" else "look"
         config["backend"] = {"type": "fake", "responses": [f"<think>Inspect the environment.</think><action>{action}</action>"]}
+        if config['environment']['type'] == 'appworld':
+            config['backend']['responses'] = ['<think>Inspect apps.</think><code>print(apis.api_docs.show_app_descriptions())</code>']
     else:
         config["backend"] = {"type": "openai_compatible", "model": args.model_name, "endpoints": [endpoint]}
     config["generation"]["repetition_penalty"] = args.repetition_penalty
@@ -141,7 +144,7 @@ class AgentSuite:
                 raise ValueError(f"dataset is not available through a declared mount: {dataset}")
             if not dataset_path.is_file():
                 raise ValueError(f"dataset is missing: {dataset_path}")
-            if env_type != "scienceworld":
+            if env_type in ("alfworld", "webshop"):
                 for directory in [work, Path(args.env_package_dir), Path(args.datasets_dir) / env_type]:
                     if not directory.is_dir():
                         raise ValueError(f"missing environment resource directory: {directory}")
@@ -151,6 +154,8 @@ class AgentSuite:
                 data = work / "webshop/data"
                 if not (data.exists() or (data.is_symlink() and os.readlink(data) == "/webshop_data/data")):
                     raise ValueError("WebShop package data link is missing or incompatible")
+            if env_type == 'appworld' and not (Path(args.datasets_dir) / 'appworld/data/tasks').is_dir():
+                raise ValueError('AppWorld data/tasks missing under datasets-dir/appworld/data')
             tag = getattr(args, f"{env_type}_image")
             images[benchmark] = {"tag": tag, "id": self.inspect_image(tag), "environment": env_type}
             configs[benchmark] = config
@@ -224,15 +229,22 @@ class AgentSuite:
                    "--env", "NVIDIA_VISIBLE_DEVICES=void", "--env", "CUDA_VISIBLE_DEVICES=",
                    *self.mount(args.project_dir, "/eval_harness"), *self.mount(self.root, "/results", readonly=False),
                    "--workdir", "/eval_harness"]
-        if env_type != "scienceworld":
+        if env_type in ("alfworld", "webshop"):
             command += [*self.mount(args.env_package_dir, "/env_package"), *self.mount(args.work_dir, "/work")]
         if env_type == "alfworld":
             command += [*self.mount(Path(args.datasets_dir) / "alfworld", "/alfworld_data"), "--env", "ALFWORLD_DATA=/alfworld_data"]
         elif env_type == "webshop":
             command += self.mount(Path(args.datasets_dir) / "webshop", "/webshop_data")
-        else:
+        elif env_type == 'scienceworld':
             command += ["--env", "JAVA_TOOL_OPTIONS=-Djava.io.tmpdir=/tmp -Duser.home=/tmp"]
-        command += ["--entrypoint", "python3", self.artifacts["environment_images"][benchmark]["id"],
+        elif env_type == 'appworld':
+            native = self.root / f'{benchmark}-native'
+            native.mkdir()
+            command += [*self.mount(Path(args.datasets_dir) / 'appworld/data', '/run/data'),
+                        *self.mount(native, '/run/experiments/outputs', readonly=False),
+                        '--env', 'APPWORLD_ROOT=/run']
+        python = '/opt/venv/bin/python' if env_type == 'appworld' else 'python3'
+        command += ["--entrypoint", python, self.artifacts["environment_images"][benchmark]["id"],
                     "-m", "eval_harness", "run", "--config", f"/results/configs/{benchmark}.yaml"]
         self.containers.append(name)
         self.docker(*command, capture_output=True)

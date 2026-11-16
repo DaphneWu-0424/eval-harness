@@ -2,6 +2,7 @@ from .math import MathEvaluator, compare_math_answers
 from .llm_judge import LLMJudge, parse_judge_output
 from .agent_success import AgentSuccessEvaluator
 from .scienceworld import ScienceWorldEvaluator
+from .appworld import AppWorldEvaluator
 
 __all__ = [
     "AgentSuccessEvaluator",

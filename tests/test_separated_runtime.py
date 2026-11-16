@@ -10,6 +10,18 @@ from eval_harness.runtime.separated import AgentSuite, LABEL, gpu_ids, parser, r
 
 
 class SeparatedRuntimeTests(unittest.TestCase):
+    def test_appworld_uses_official_virtualenv_and_isolated_native_output(self):
+        self.args.benchmarks = ['appworld']
+        (Path(self.args.datasets_dir) / 'appworld/data/tasks').mkdir(parents=True)
+        with patch('eval_harness.runtime.separated.subprocess.run', side_effect=self.process):
+            report = self.suite.run()
+        command = next(c for c in self.calls if c[:2] == ['docker', 'run'] and '--gpus' not in c)
+        self.assertEqual(command[command.index('--entrypoint')+1], '/opt/venv/bin/python')
+        self.assertTrue(any('dst=/run/data,readonly' in x for x in command))
+        self.assertTrue(any('dst=/run/experiments/outputs' in x for x in command))
+        self.assertFalse(any('dst=/env_package' in x or 'dst=/work,' in x for x in command))
+        self.assertEqual(report['cleanup'], 'completed')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

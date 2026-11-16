@@ -1,6 +1,6 @@
 # Trajectory Evaluation Harness
 
-通用、组件化、以轨迹为核心的模型与 Agent 测评框架。目前支持 Reasoning / Math，以及 ALFWorld、WebShop、ScienceWorld。
+通用、组件化、以轨迹为核心的模型与 Agent 测评框架。目前支持 Reasoning / Math，以及 ALFWorld、WebShop、ScienceWorld、AppWorld。
 
 ## Agent 测评
 
@@ -14,12 +14,18 @@ CHECKPOINT=/path/to/ckpt bash scripts/run_checkpoint_sweep_parallel.sh \
   --benchmark scienceworld
 
 CHECKPOINT_DIR=/path/to/checkpoints bash scripts/run_checkpoint_sweep_parallel.sh \
-  --benchmark alfworld --benchmark webshop --benchmark scienceworld
+  --benchmark alfworld --benchmark webshop --benchmark scienceworld --benchmark appworld
 ```
 
-`--checkpoint` 和 `--benchmark` 均可重复指定，`--dataset NAME=CONFIG.yaml` 支持同一环境的不同数据集。默认使用全部可见 GPU；`GPU_IDS=0,1,2,3` 可限制池子。未指定数据集时运行以上三个环境，因此首次使用建议显式选择。
+`--checkpoint` 和 `--benchmark` 均可重复指定，`--dataset NAME=CONFIG.yaml` 支持同一环境的不同数据集。默认使用全部可见 GPU；`GPU_IDS=0,1,2,3` 可限制池子。未指定数据集时运行以上四个环境，因此首次使用建议显式选择。
 
 ScienceWorld 默认采用同事固定的 CLAIM 测试清单：30 类、271 个 episode、每个最多 50 次动作。分别报告按任务类型宏平均的任务得分（0–100）和成功率（原始得分达到 100）。已验证原生环境一致性与真实推理冒烟；尚未运行完整 271 个 episode 的模型测评。
+
+AppWorld 使用 `ghcr.io/stonybrooknlp/appworld:latest`，默认 `test_normal` 的 168 个任务、每任务 50 步。通过官方 SDK 执行 Python/API 调用并用官方状态测试判分，分别报告 TGC 和 SGC；环境数据挂载自 `/ssd/datasets/appworld/data`。
+
+```bash
+CHECKPOINT=/path/to/ckpt bash scripts/run_checkpoint_sweep_parallel.sh --benchmark appworld
+```
 
 ## Reasoning / Math
 
