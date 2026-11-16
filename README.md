@@ -22,3 +22,13 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 该文件权限应为 `600`，已被 `.gitignore` 排除；runner 会自动加载。
 
 详见 [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) 和 [TODO.md](TODO.md)。
+
+## Agent ??
+
+ALFWorld / WebShop ???? SGLang ?????? GPU ?????
+
+```bash
+python3 scripts/run_agent_suite.py --model-dir /ssd/models/Qwen2.5-1.5B-Instruct --gpus 0
+```
+
+??????????????? checkpoint ??? [AGENT_EVAL.md](AGENT_EVAL.md)?ScienceWorld ?????
