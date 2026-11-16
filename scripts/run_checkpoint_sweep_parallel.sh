@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Each slot owns a physical GPU and runs its own inference/environment containers.
+# Shared FIFO: one checkpoint x one dataset is one independently scheduled GPU job.
 if [[ -n "${GPU_IDS:-}" ]]; then
     devices="$GPU_IDS"
-else
-    count="${GPUS:-8}"
+elif [[ -n "${GPUS:-}" ]]; then
+    count="$GPUS"
     [[ "$count" =~ ^[1-9][0-9]*$ ]] || { echo "GPUS must be positive" >&2; exit 2; }
     devices="$(seq -s, 0 $((count - 1)))"
+else
+    devices=auto
 fi
-args=(--checkpoint-dir "${CHECKPOINT_DIR:?set CHECKPOINT_DIR}" --gpus "$devices" --parallel)
+args=(--gpus "$devices" --parallel)
+[[ -z "${CHECKPOINT_DIR:-}" ]] || args+=(--checkpoint-dir "$CHECKPOINT_DIR")
+[[ -z "${CHECKPOINT:-}" ]] || args+=(--checkpoint "$CHECKPOINT")
 [[ -z "${BASE_MODEL:-}" ]] || args+=(--base-model "$BASE_MODEL")
 [[ -z "${MERGE_CONTAINER:-}" ]] || args+=(--merge-container "$MERGE_CONTAINER")
 [[ -z "${MERGE_ROOT:-}" ]] || args+=(--merge-root "$MERGE_ROOT")

@@ -21,6 +21,19 @@ ENV_IMAGES = {"alfworld": "eval-harness/alfworld-env:20261116", "webshop": "eval
 LABEL = "eval-harness.run_id"
 
 
+def select_datasets(args: argparse.Namespace) -> None:
+    overrides = {}
+    for item in args.dataset_configs:
+        name, separator, path = item.partition("=")
+        if not separator or not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,23}", name) or not path:
+            raise ValueError("--dataset must be NAME=CONFIG.yaml with a short lowercase name")
+        if name in overrides or name in (args.benchmarks or []):
+            raise ValueError(f"duplicate dataset name: {name}")
+        overrides[name] = path
+    args.config_overrides = overrides
+    args.benchmarks = list(dict.fromkeys([*(args.benchmarks or []), *overrides])) or list(ENV_IMAGES)
+
+
 def execute(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     return subprocess.run(args, check=True, text=True, **kwargs)
 
@@ -48,7 +61,7 @@ def resolved_config(base: dict, benchmark: str, args: argparse.Namespace, endpoi
     if args.max_steps is not None:
         config["environment"]["max_steps"] = args.max_steps
     if args.backend == "fake":
-        action = "look" if benchmark == "alfworld" else "search[shirt]"
+        action = "look" if config["environment"]["type"] == "alfworld" else "search[shirt]"
         config["backend"] = {"type": "fake", "responses": [f"<think>Inspect the environment.</think><action>{action}</action>"]}
     else:
         config["backend"] = {"type": "openai_compatible", "model": args.model_name, "endpoints": [endpoint]}
@@ -112,23 +125,25 @@ class AgentSuite:
                 raise ValueError(f"required directory not found: {path}")
         configs, images = {}, {}
         for benchmark in args.benchmarks:
-            path = project / "configs" / "agent" / f"{benchmark}.yaml"
+            override = getattr(args, "config_overrides", {}).get(benchmark)
+            path = (project / override) if override else project / "configs" / "agent" / f"{benchmark}.yaml"
             config = yaml.safe_load(path.read_text(encoding="utf-8"))
-            if config["environment"]["type"] != benchmark:
-                raise ValueError(f"environment type mismatch: {path}")
+            env_type = config["environment"]["type"]
+            if env_type not in ENV_IMAGES:
+                raise ValueError(f"unsupported environment in {path}: {env_type}")
             dataset = config["dataset"]["path"]
             if not dataset.startswith("/work/") or not (work / dataset.removeprefix("/work/")).is_file():
                 raise ValueError(f"dataset is not available through /work: {dataset}")
-            if not (Path(args.datasets_dir) / benchmark).is_dir():
-                raise ValueError(f"missing {benchmark} dataset directory")
-            if benchmark == "webshop":
+            if not (Path(args.datasets_dir) / env_type).is_dir():
+                raise ValueError(f"missing {env_type} dataset directory")
+            if env_type == "webshop":
                 if not (work / "webshop/search_engine/indexes_1k").is_dir():
                     raise ValueError("WebShop Lucene indexes_1k is missing")
                 data = work / "webshop/data"
                 if not (data.exists() or (data.is_symlink() and os.readlink(data) == "/webshop_data/data")):
                     raise ValueError("WebShop package data link is missing or incompatible")
-            tag = getattr(args, f"{benchmark}_image")
-            images[benchmark] = {"tag": tag, "id": self.inspect_image(tag)}
+            tag = getattr(args, f"{env_type}_image")
+            images[benchmark] = {"tag": tag, "id": self.inspect_image(tag), "environment": env_type}
             configs[benchmark] = config
         if args.backend != "fake" and not args.endpoint:
             if not args.model_dir or not (Path(args.model_dir) / "config.json").is_file():
@@ -191,6 +206,7 @@ class AgentSuite:
     def run_environment(self, benchmark: str, config: dict) -> None:
         self.check_cancelled()
         args = self.args
+        env_type = config["environment"]["type"]
         name = f"eh-{args.run_id}-{benchmark}"
         config_path = self.root / "configs" / f"{benchmark}.yaml"
         config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
@@ -200,7 +216,7 @@ class AgentSuite:
                    *self.mount(args.project_dir, "/eval_harness"), *self.mount(args.env_package_dir, "/env_package"),
                    *self.mount(args.work_dir, "/work"), *self.mount(self.root, "/results", readonly=False),
                    "--workdir", "/eval_harness"]
-        if benchmark == "alfworld":
+        if env_type == "alfworld":
             command += [*self.mount(Path(args.datasets_dir) / "alfworld", "/alfworld_data"), "--env", "ALFWORLD_DATA=/alfworld_data"]
         else:
             command += self.mount(Path(args.datasets_dir) / "webshop", "/webshop_data")
@@ -295,6 +311,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--results-root", default="/ssd/eval-results/separated")
     result.add_argument("--run-id", default=dt.datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6])
     result.add_argument("--benchmark", dest="benchmarks", action="append", choices=list(ENV_IMAGES))
+    result.add_argument("--dataset", dest="dataset_configs", action="append", default=[], metavar="NAME=CONFIG.yaml", help="A named dataset configuration using a supported environment; repeatable")
     result.add_argument("--model-dir")
     result.add_argument("--model-name", default="current-checkpoint")
     result.add_argument("--endpoint", help="Use an existing endpoint instead of starting SGLang")
@@ -317,7 +334,7 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    args.benchmarks = list(dict.fromkeys(args.benchmarks or ENV_IMAGES))
+    select_datasets(args)
     suite = AgentSuite(args)
     def terminate(signum, frame):
         suite.cancel()

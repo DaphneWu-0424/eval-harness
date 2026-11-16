@@ -1,4 +1,4 @@
-"""Checkpoint scheduling with one independently owned inference container per GPU slot."""
+"""Dynamic GPU queue of independent checkpoint ? dataset evaluations."""
 from __future__ import annotations
 
 import copy
@@ -6,11 +6,14 @@ import csv
 import hashlib
 import json
 import signal
-import threading
+import time
+import re
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from .separated import AgentSuite, atomic_json, execute, gpu_ids, parser
+from .separated import AgentSuite, atomic_json, execute, gpu_ids, parser, select_datasets
+from .gpu_pool import GpuLease, gpu_status
 
 
 def discover(root: Path, selected: set[int] | None = None) -> list[tuple[int, Path]]:
@@ -20,18 +23,15 @@ def discover(root: Path, selected: set[int] | None = None) -> list[tuple[int, Pa
             continue
         if path.name.startswith("global_step_") and path.name.removeprefix("global_step_").isdigit():
             step = int(path.name.removeprefix("global_step_"))
-        elif path.name == "best_checkpoint":
-            info = path / "best_checkpoint_info.json"
-            if not info.is_file():
-                raise ValueError(f"missing checkpoint step metadata: {info}")
-            step = int(json.loads(info.read_text())["global_step"])
+        elif path.name == "best_checkpoint" or has_weights(path) or (path / "actor").is_dir():
+            step = checkpoint_step(path)
         else:
             continue
         if selected is None or step in selected:
-            checkpoints.append((step, path))
+            checkpoints.append((step, path.resolve()))
     if not checkpoints:
         raise ValueError(f"no selected checkpoints found under {root}")
-    return sorted(checkpoints, key=lambda x: (x[0], x[1].name))
+    return sorted(checkpoints, key=lambda x: (x[0] is None, x[0] or 0, x[1].name))
 
 
 def has_weights(path: Path) -> bool:
@@ -78,97 +78,258 @@ def prepare_model(path: Path, args) -> Path:
     return target
 
 
+
+class TaskQueue:
+    """A shared FIFO of checkpoint × dataset jobs, assigned to currently idle GPUs."""
+    def __init__(self, args, tasks, report_dir, state):
+        self.args, self.tasks, self.report_dir, self.state = args, tasks, report_dir, state
+        self.pending = deque(t for t in tasks if t["status"] == "pending")
+        self.active = {}
+        self.stopping = False
+        self.signal_number = None
+        self.simulated = args.backend == "fake"
+        inventory = {} if self.simulated else gpu_status()
+        self.ids = (list(map(str, range(8))) if self.simulated else sorted(inventory, key=int)) if args.gpus == "auto" else gpu_ids(args.gpus)
+        if not self.ids:
+            raise ValueError("no visible GPUs found")
+        if not self.simulated and any(g not in inventory for g in self.ids):
+            raise ValueError("requested GPU IDs are not present on this host")
+        self.capacity = min(args.max_parallel or (len(self.ids) if args.parallel else 1), len(self.ids))
+        if self.capacity < 1:
+            raise ValueError("max-parallel must be positive")
+        state.update(gpus=self.ids, max_parallel=self.capacity, simulated_gpu_pool=self.simulated)
+
+    def persist(self):
+        self.state["counts"] = {status: sum(t["status"] == status for t in self.tasks)
+                                for status in ["pending", "running", "completed", "failed", "cancelled"]}
+        atomic_json(self.report_dir / "sweep.json", self.state)
+        temporary = self.report_dir / "matrix.csv.tmp"
+        with temporary.open("w", newline="", encoding="utf-8") as output:
+            writer = csv.writer(output)
+            writer.writerow(["checkpoint", "checkpoint_path", "global_step", "benchmark", "gpu", "success_rate", "status", "run_id"])
+            for task in self.tasks:
+                writer.writerow([task["checkpoint"], task["checkpoint_path"], task["step"] if task["step"] is not None else "",
+                                 task["benchmark"], task.get("gpu", ""), task.get("metrics", {}).get("accuracy", ""), task["status"], task["run_id"]])
+        temporary.replace(self.report_dir / "matrix.csv")
+
+    def request_stop(self, signum=None):
+        self.stopping = True
+        self.signal_number = signum or self.signal_number
+        for task, gpu, lease, suite in list(self.active.values()):
+            suite.cancel()
+
+    def collect_finished(self):
+        changed = False
+        for future, (task, gpu, lease, suite) in list(self.active.items()):
+            if not future.done():
+                continue
+            try:
+                report = future.result()
+                result = report["benchmarks"][task["benchmark"]]
+                task.update(status="completed", metrics=result["metrics"])
+            except BaseException as exc:
+                task.update(status="cancelled" if self.stopping else "failed", error=f"{type(exc).__name__}: {exc}")
+            finally:
+                task["ended_at"] = time.time()
+                if lease:
+                    lease.release()
+                self.active.pop(future)
+                changed = True
+        if changed:
+            self.persist()
+        return changed
+
+    def assign(self, pool):
+        if self.stopping or not self.pending or len(self.active) >= self.capacity:
+            return False
+        inventory = ({g: {"memory_mib": 0, "has_compute_process": False} for g in self.ids}
+                     if self.simulated else gpu_status())
+        occupied = {entry[1] for entry in self.active.values()}
+        assigned = False
+        for gpu in self.ids:
+            if not self.pending or len(self.active) >= self.capacity:
+                break
+            info = inventory.get(gpu)
+            if gpu in occupied or not info or info["has_compute_process"] or info["memory_mib"] > self.args.max_gpu_memory_mib:
+                continue
+            lease = None
+            if not self.simulated:
+                lease = GpuLease(self.args.lease_dir, gpu, self.args.run_id)
+                if not lease.acquire():
+                    continue
+                # Check again after taking the cross-process lease, before starting the model.
+                try:
+                    fresh = gpu_status().get(gpu)
+                    if not fresh or fresh["has_compute_process"] or fresh["memory_mib"] > self.args.max_gpu_memory_mib:
+                        lease.release()
+                        continue
+                except BaseException:
+                    lease.release()
+                    raise
+            if self.stopping:
+                if lease:
+                    lease.release()
+                break
+            task = self.pending.popleft()
+            local = copy.deepcopy(self.args)
+            local.gpus, local.tp_size = gpu, 1
+            local.benchmarks = [task["benchmark"]]
+            local.model_dir = task["model_dir"]
+            local.model_name = "current-checkpoint"
+            local.run_id = task["run_id"]
+            suite = AgentSuite(local)
+            task.update(status="running", gpu=gpu, started_at=time.time())
+            try:
+                future = pool.submit(suite.run)
+            except BaseException:
+                if lease:
+                    lease.release()
+                task.update(status="failed", error="could not submit task")
+                raise
+            self.active[future] = (task, gpu, lease, suite)
+            occupied.add(gpu)
+            print(f"[{self.args.run_id}] GPU {gpu}: {task['checkpoint_path']} × {task['benchmark']}", flush=True)
+            self.persist()
+            assigned = True
+        return assigned
+
+    def run(self):
+        self.state["status"] = "running"
+        self.persist()
+        last_progress = time.monotonic()
+        last_message = 0.0
+        with ThreadPoolExecutor(max_workers=self.capacity) as pool:
+            try:
+                while self.pending or self.active:
+                    changed = self.collect_finished()
+                    if self.stopping:
+                        break
+                    assigned = self.assign(pool)
+                    now = time.monotonic()
+                    if changed or assigned:
+                        last_progress = now
+                    if self.pending and not self.active:
+                        self.state["status"] = "waiting_for_gpu"
+                        self.persist()
+                        if now - last_message >= 60:
+                            print(f"[{self.args.run_id}] {len(self.pending)} tasks queued; waiting for an idle GPU", flush=True)
+                            last_message = now
+                        if self.args.queue_timeout and now - last_progress >= self.args.queue_timeout:
+                            raise TimeoutError("no GPU became available before queue-timeout")
+                    else:
+                        self.state["status"] = "running"
+                    if self.pending or self.active:
+                        time.sleep(self.args.poll_seconds)
+            except BaseException as exc:
+                self.state["error"] = f"{type(exc).__name__}: {exc}"
+                self.request_stop()
+            finally:
+                # Stop only this submission's owned containers, then let workers save logs/cleanup.
+                if self.stopping:
+                    self.request_stop()
+                while self.active:
+                    self.collect_finished()
+                    if self.active:
+                        time.sleep(min(self.args.poll_seconds, 0.2))
+                while self.pending:
+                    self.pending.popleft().update(status="cancelled", error=self.state.get("error", "submission interrupted"))
+        failed = any(t["status"] != "completed" for t in self.tasks)
+        self.state["status"] = "interrupted" if self.signal_number else "failed" if failed else "completed"
+        self.persist()
+        return 128 + self.signal_number if self.signal_number else 1 if failed else 0
+
+
+def checkpoint_step(path):
+    match = re.search(r"(?:global_step_|checkpoint[-_]|step[-_]?)(\d+)$", path.name)
+    if match:
+        return int(match[1])
+    for name in ["best_checkpoint_info.json", "verified.json"]:
+        info = path / name
+        if info.is_file():
+            data = json.loads(info.read_text())
+            for key in ["global_step", "step", "iteration"]:
+                if key in data:
+                    return int(data[key])
+    return None
+
+
+def task_id(prefix, checkpoint, dataset):
+    identity = hashlib.sha256(f"{prefix}\0{checkpoint.resolve()}\0{dataset}".encode()).hexdigest()[:8]
+    slug = re.sub(r"[^a-z0-9_.-]", "-", checkpoint.name.lower())[:12].strip(".-") or "checkpoint"
+    return f"{prefix[:16]}-{slug}-{dataset[:18]}-{identity}"
+
+
 def main(argv=None):
     p = parser()
-    p.description = "Evaluate checkpoints with separate SGLang and CPU environment containers"
-    p.add_argument("--checkpoint-dir", required=True)
+    p.description = "GPU task queue: one checkpoint × one selected dataset per GPU"
+    p.set_defaults(gpus="auto")
+    p.add_argument("--checkpoint-dir", help="Discover checkpoint subdirectories")
+    p.add_argument("--checkpoint", action="append", default=[], help="Explicit checkpoint/export directory; repeatable")
     p.add_argument("--steps", help="Optional comma-separated checkpoint steps")
     p.add_argument("--base-model", default="/ssd/models/Qwen2.5-1.5B-Instruct")
     p.add_argument("--merge-container", default="edge-dev")
     p.add_argument("--merge-root", default="/ssd/models/eval-harness-merged")
-    p.add_argument("--parallel", action="store_true")
+    p.add_argument("--parallel", action="store_true", help="Use the whole GPU pool instead of one task at a time")
+    p.add_argument("--max-parallel", type=int, help="Optional submission concurrency cap")
+    p.add_argument("--poll-seconds", type=float, default=5)
+    p.add_argument("--queue-timeout", type=float, default=0, help="Idle wait timeout; 0 waits indefinitely")
+    p.add_argument("--lease-dir", default="/tmp/eval-harness-gpu-leases", help="Use the same host directory across queue submissions")
     args = p.parse_args(argv)
-    args.benchmarks = list(dict.fromkeys(args.benchmarks or ["alfworld", "webshop"]))
-    if args.endpoint:
-        p.error("a checkpoint sweep must own and switch its model server; --endpoint is for single-model suites")
-    if args.tp_size != 1:
-        p.error("checkpoint sweep uses one TP1 model per GPU slot; use run_agent_suite.py for TP>1")
-    ids = gpu_ids(args.gpus)
-    if not args.parallel and len(ids) != 1:
-        p.error("serial sweep requires one GPU; use --parallel for multiple GPU IDs")
+    select_datasets(args)
+    if args.model_dir:
+        args.checkpoint.append(args.model_dir)
+    if not args.checkpoint_dir and not args.checkpoint:
+        p.error("supply --checkpoint-dir or one or more --checkpoint paths")
+    if args.endpoint or args.tp_size != 1:
+        p.error("queue jobs own a TP1 model server; external endpoints/TP>1 use run_agent_suite.py")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,60}", args.run_id):
+        p.error("run-id must be a short lowercase Docker-safe identifier")
+    if args.poll_seconds <= 0 or args.queue_timeout < 0 or (args.max_parallel is not None and args.max_parallel < 1):
+        p.error("poll-seconds/max-parallel must be positive and queue-timeout nonnegative")
     selected = {int(s) for s in args.steps.split(",")} if args.steps else None
-    checkpoints = discover(Path(args.checkpoint_dir).resolve(), selected)
+    checkpoints = discover(Path(args.checkpoint_dir).resolve(), selected) if args.checkpoint_dir else []
+    for name in args.checkpoint:
+        path = Path(name).resolve()
+        if not path.is_dir():
+            p.error(f"checkpoint directory not found: {path}")
+        step = checkpoint_step(path)
+        if selected is None or step in selected:
+            checkpoints.append((step, path))
+    checkpoints = list({str(path): (step, path) for step, path in checkpoints}.values())
+    if not checkpoints:
+        p.error("no checkpoints match the selection")
     report_dir = Path(args.results_root).resolve() / f"{args.run_id}-sweep"
     report_dir.mkdir(parents=True, exist_ok=False)
-    state = {"status": "preparing", "run_id": args.run_id, "gpus": ids, "checkpoints": []}
+    tasks = [dict(checkpoint=path.name, checkpoint_path=str(path), step=step, benchmark=dataset,
+                  run_id=task_id(args.run_id, path, dataset), status="pending")
+             for step, path in checkpoints for dataset in args.benchmarks]
+    state = {"status": "preparing_models", "run_id": args.run_id, "task_definition": "checkpoint_x_dataset", "tasks": tasks}
     atomic_json(report_dir / "sweep.json", state)
-    # Merge serially, outside inference containers; model export is independent of environment execution.
+    # Each checkpoint is exported once; its datasets then become independent GPU jobs.
+    for step, path in checkpoints:
+        try:
+            model = prepare_model(path, args)
+            for task in tasks:
+                if task["checkpoint_path"] == str(path):
+                    task["model_dir"] = str(model)
+        except Exception as exc:
+            for task in tasks:
+                if task["checkpoint_path"] == str(path):
+                    task.update(status="failed", error=f"model preparation: {exc}")
+        atomic_json(report_dir / "sweep.json", state)
     try:
-        jobs = [(step, path, prepare_model(path, args)) for step, path in checkpoints]
-    except BaseException as exc:
+        queue = TaskQueue(args, tasks, report_dir, state)
+    except Exception as exc:
         state.update(status="failed", error=str(exc))
         atomic_json(report_dir / "sweep.json", state)
         raise
-    state["status"] = "running"
-    lock = threading.RLock()
-    stop = threading.Event()
-    active: list[AgentSuite] = []
-
-    def persist():
-        atomic_json(report_dir / "sweep.json", state)
-        temp = report_dir / "matrix.csv.tmp"
-        with temp.open("w", newline="", encoding="utf-8") as output:
-            writer = csv.writer(output)
-            writer.writerow(["checkpoint", "global_step", "benchmark", "success_rate", "status", "run_id"])
-            for item in sorted(state["checkpoints"], key=lambda r: (r["step"], r["checkpoint"])):
-                for benchmark in args.benchmarks:
-                    result = item.get("benchmarks", {}).get(benchmark, {})
-                    writer.writerow([item["checkpoint"], item["step"], benchmark, result.get("metrics", {}).get("accuracy", ""), result.get("status", item["status"]), item["run_id"]])
-        temp.replace(report_dir / "matrix.csv")
-
-    def worker(slot):
-        # A slot owns one physical GPU for its whole queue, so differing job lengths cannot collide.
-        for step, checkpoint, model in jobs[slot::len(ids)]:
-            if stop.is_set():
-                return
-            local = copy.deepcopy(args)
-            local.gpus = ids[slot]
-            local.model_dir = str(model)
-            local.model_name = "current-checkpoint"
-            local.run_id = f"{args.run_id}-{checkpoint.name}"
-            suite = AgentSuite(local)
-            item = {"checkpoint": checkpoint.name, "step": step, "run_id": local.run_id, "status": "running"}
-            with lock:
-                state["checkpoints"].append(item)
-                active.append(suite)
-                persist()
-            try:
-                result = suite.run()
-                item.update(status="completed", benchmarks=result["benchmarks"])
-            except BaseException as exc:
-                item.update(status="failed", error=str(exc), benchmarks=suite.artifacts["benchmarks"])
-            finally:
-                with lock:
-                    active.remove(suite)
-                    persist()
-
-    def terminate(signum, frame):
-        stop.set()
-        with lock:
-            for suite in list(active):
-                suite.cancel()
-        raise SystemExit(128 + signum)
-
-    signal.signal(signal.SIGTERM, terminate)
-    signal.signal(signal.SIGINT, terminate)
+    old_handlers = {}
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        old_handlers[sig] = signal.signal(sig, lambda signum, frame: queue.request_stop(signum))
     try:
-        with ThreadPoolExecutor(max_workers=len(ids)) as pool:
-            list(pool.map(worker, range(len(ids))))
-        state["status"] = "completed" if all(c["status"] == "completed" for c in state["checkpoints"]) else "failed"
+        code = queue.run()
     finally:
-        if stop.is_set():
-            state["status"] = "interrupted"
-        with lock:
-            persist()
-    print(f"Sweep {state['status']}: {report_dir / 'matrix.csv'}", flush=True)
-    return 0 if state["status"] == "completed" else 1
+        for sig, handler in old_handlers.items():
+            signal.signal(sig, handler)
+    print(f"Queue {state['status']}: {report_dir / 'matrix.csv'}", flush=True)
+    return code

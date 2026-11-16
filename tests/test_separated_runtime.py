@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from eval_harness.runtime.separated import AgentSuite, LABEL, gpu_ids, parser, resolved_config
+from eval_harness.runtime.separated import AgentSuite, LABEL, gpu_ids, parser, resolved_config, select_datasets
 
 
 class SeparatedRuntimeTests(unittest.TestCase):
@@ -145,6 +145,19 @@ class SeparatedRuntimeTests(unittest.TestCase):
             self.suite.cancel()
         self.assertTrue(self.suite.cancelled.is_set())
         self.assertFalse(any(c[:2] == ["docker", "stop"] for c in self.calls))
+
+    def test_custom_dataset_uses_environment_type_for_image_and_mounts(self):
+        self.args.benchmarks = None
+        self.args.dataset_configs = ["seen=configs/agent/alfworld.yaml"]
+        self.args.backend = "fake"
+        select_datasets(self.args)
+        with patch("eval_harness.runtime.separated.subprocess.run", side_effect=self.process):
+            report = self.suite.run()
+        self.assertIn("seen", report["benchmarks"])
+        self.assertEqual(report["environment_images"]["seen"]["environment"], "alfworld")
+        run = next(c for c in self.calls if c[:2] == ["docker", "run"])
+        self.assertTrue(any("dst=/alfworld_data" in v for v in run))
+        self.assertFalse(any("dst=/webshop_data" in v for v in run))
 
 
 if __name__ == "__main__":

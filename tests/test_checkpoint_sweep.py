@@ -49,7 +49,7 @@ class CheckpointSweepTests(unittest.TestCase):
                 prepare_model(checkpoint, args)
             self.assertEqual(marker.read_text(), "previous work")
 
-    def test_parallel_slots_never_overlap_on_the_same_gpu(self):
+    def test_queue_reuses_first_free_gpu_instead_of_static_assignment(self):
         from eval_harness.runtime import sweep
         active, failures, assignments = set(), [], {}
         lock = threading.Lock()
@@ -64,8 +64,9 @@ class CheckpointSweepTests(unittest.TestCase):
                     if self.args.gpus in active:
                         failures.append(self.args.gpus)
                     active.add(self.args.gpus)
-                    assignments[self.args.run_id] = self.args.gpus
-                time.sleep(0.01 if self.args.run_id.endswith("2") else 0.03)
+                    name = Path(self.args.model_dir).name
+                    assignments[name] = self.args.gpus
+                time.sleep(0.08 if name == "global_step_1" else 0.005)
                 with lock:
                     active.remove(self.args.gpus)
                 return {"benchmarks": {"alfworld": {"status": "completed", "metrics": {"accuracy": 0.5}}}}
@@ -78,12 +79,12 @@ class CheckpointSweepTests(unittest.TestCase):
                 (path / "config.json").write_text("{}")
                 (path / "model.safetensors").write_bytes(b"fixture")
             with patch.object(sweep, "AgentSuite", FakeSuite), patch.object(sweep.signal, "signal"):
-                code = sweep.main(["--checkpoint-dir", str(root / "checkpoints"), "--results-root", str(root / "results"), "--run-id", "parallel-test", "--parallel", "--gpus", "0,1", "--benchmark", "alfworld"])
+                code = sweep.main(["--checkpoint-dir", str(root / "checkpoints"), "--results-root", str(root / "results"), "--run-id", "parallel-test", "--parallel", "--gpus", "0,1", "--backend", "fake", "--poll-seconds", "0.001", "--benchmark", "alfworld"])
             self.assertEqual(code, 0)
             self.assertEqual(failures, [])
-            self.assertEqual(assignments["parallel-test-global_step_1"], "0")
-            self.assertEqual(assignments["parallel-test-global_step_3"], "0")
-            self.assertEqual(assignments["parallel-test-global_step_2"], "1")
+            self.assertEqual(assignments["global_step_1"], "0")
+            self.assertEqual(assignments["global_step_2"], "1")
+            self.assertEqual(assignments["global_step_3"], "1")
             self.assertEqual(len(assignments), 5)
             self.assertTrue((root / "results/parallel-test-sweep/matrix.csv").is_file())
 
